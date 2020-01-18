@@ -15,8 +15,10 @@
  */
 
 #include <VFC/VertexValue.h>
+#include <cassert>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <limits>
 #include <type_traits>
 
@@ -54,12 +56,23 @@ inline double unpackUNorm(T data, T maxValue)
 	return static_cast<double>(data)/static_cast<double>(maxValue);
 }
 
+inline void unpackUNormValues(double* values, const std::uint8_t* data, unsigned int count)
+{
+	constexpr auto maxValue = std::numeric_limits<std::uint8_t>::max();
+	for (unsigned int i = 0; i < count; ++i)
+		values[i] = unpackUNorm(data[i], maxValue);
+}
+
 template <typename T>
 inline void unpackUNormValues(double* values, const T* data, unsigned int count)
 {
 	constexpr auto maxValue = std::numeric_limits<T>::max();
+
+	assert(count <= 4);
+	T alignedData[4];
+	std::memcpy(alignedData, data, sizeof(T)*count);
 	for (unsigned int i = 0; i < count; ++i)
-		values[i] = unpackUNorm(data[i], maxValue);
+		values[i] = unpackUNorm(alignedData[i], maxValue);
 }
 
 template <typename T, typename U, typename V>
@@ -75,36 +88,64 @@ inline double unpackSNorm(T data, U absMinValue, V range)
 	return value*2 - 1.0;
 }
 
-template <typename T>
-inline void unpackSNormValues(double* values, const T* data, unsigned int count)
+inline void unpackSNormValues(double* values, const std::int8_t* data, unsigned int count)
 {
-	const auto absMinValue = std::abs(std::numeric_limits<T>::min());
-	constexpr auto range = std::numeric_limits<typename std::make_unsigned<T>::type>::max();
+	const auto absMinValue = std::abs(std::numeric_limits<std::int8_t>::min());
+	constexpr auto range = std::numeric_limits<std::uint8_t>::max();
+
 	for (unsigned int i = 0; i < count; ++i)
 		values[i] = unpackSNorm(data[i], absMinValue, range);
 }
 
 template <typename T>
-inline void unpackDirect(double* values, const T* data, unsigned int count)
+inline void unpackSNormValues(double* values, const T* data, unsigned int count)
+{
+	const auto absMinValue = std::abs(std::numeric_limits<T>::min());
+	constexpr auto range = std::numeric_limits<typename std::make_unsigned<T>::type>::max();
+
+	assert(count <= 4);
+	T alignedData[4];
+	std::memcpy(alignedData, data, sizeof(T)*count);
+	for (unsigned int i = 0; i < count; ++i)
+		values[i] = unpackSNorm(alignedData[i], absMinValue, range);
+}
+
+inline void unpackDirect(double* values, const std::uint8_t* data, unsigned int count)
 {
 	for (unsigned int i = 0; i < count; ++i)
 		values[i] = static_cast<double>(data[i]);
 }
 
-inline void unpackHalfFloatValues(double* values, const std::uint16_t* data, unsigned int count)
+inline void unpackDirect(double* values, const std::int8_t* data, unsigned int count)
 {
 	for (unsigned int i = 0; i < count; ++i)
-		values[i] = glm::unpackHalf(glm::u16vec1(data[i])).x;
+		values[i] = static_cast<double>(data[i]);
 }
 
 template <typename T>
-inline typename std::make_signed<T>::type makeSigned(T value, T signBit, T mask)
+inline void unpackDirect(double* values, const T* data, unsigned int count)
+{
+	assert(count <= 4);
+	T alignedData[4];
+	std::memcpy(alignedData, data, sizeof(T)*count);
+	for (unsigned int i = 0; i < count; ++i)
+		values[i] = static_cast<double>(alignedData[i]);
+}
+
+inline void unpackHalfFloatValues(double* values, const std::uint16_t* data, unsigned int count)
+{
+	assert(count <= 4);
+	std::uint16_t alignedData[4];
+	std::memcpy(alignedData, data, sizeof(std::uint16_t)*count);
+	for (unsigned int i = 0; i < count; ++i)
+		values[i] = glm::unpackHalf(glm::u16vec1(alignedData[i])).x;
+}
+
+template <typename T>
+inline typename std::make_signed<T>::type makeSigned(T value, T signBit)
 {
 	using SignedT = typename std::make_signed<T>::type;
-	if (value & signBit)
-		return static_cast<SignedT>(value | ~mask);
-	else
-		return static_cast<SignedT>(value);
+	return static_cast<SignedT>((value ^ signBit) - signBit);
 }
 
 template <typename T>
@@ -113,12 +154,23 @@ inline T packUNorm(double value, T maxValue)
 	return static_cast<T>(std::round(glm::clamp(value, 0.0, 1.0)*static_cast<double>(maxValue)));
 }
 
+inline void packUNormValues(std::uint8_t* data, const double* values, unsigned int count)
+{
+	constexpr auto maxValue = std::numeric_limits<std::uint8_t>::max();
+	for (unsigned int i = 0; i < count; ++i)
+		data[i] = packUNorm(values[i], maxValue);
+}
+
 template <typename T>
 inline void packUNormValues(T* data, const double* values, unsigned int count)
 {
 	constexpr auto maxValue = std::numeric_limits<T>::max();
+
+	assert(count <= 4);
+	T alignedData[4];
 	for (unsigned int i = 0; i < count; ++i)
-		data[i] = packUNorm(values[i], maxValue);
+		alignedData[i] = packUNorm(values[i], maxValue);
+	std::memcpy(data, alignedData, sizeof(T)*count);
 }
 
 template <typename T, typename U, typename V>
@@ -130,13 +182,26 @@ inline T packSNorm(double value, U absMinValue, V range)
 	return static_cast<T>(baseRange - absMinValue);
 }
 
+inline void packSNormValues(std::int8_t* data, const double* values, unsigned int count)
+{
+	const auto absMinValue = std::abs(std::numeric_limits<std::int8_t>::min());
+	constexpr auto range = std::numeric_limits<std::uint8_t>::max();
+
+	for (unsigned int i = 0; i < count; ++i)
+		data[i] = packSNorm<std::int8_t>(values[i], absMinValue, range);
+}
+
 template <typename T>
 inline void packSNormValues(T* data, const double* values, unsigned int count)
 {
 	const auto absMinValue = std::abs(std::numeric_limits<T>::min());
 	constexpr auto range = std::numeric_limits<typename std::make_unsigned<T>::type>::max();
+
+	assert(count <= 4);
+	T alignedData[4];
 	for (unsigned int i = 0; i < count; ++i)
-		data[i] = packSNorm<T>(values[i], absMinValue, range);
+		alignedData[i] = packSNorm<T>(values[i], absMinValue, range);
+	std::memcpy(data, alignedData, sizeof(T)*count);
 }
 
 template <typename T>
@@ -146,27 +211,54 @@ inline T packInteger(double value, T minVal, T maxVal)
 		static_cast<double>(maxVal))));
 }
 
+inline void packIntegers(std::uint8_t* data, const double* values, unsigned int count)
+{
+	constexpr auto minValue = std::numeric_limits<std::uint8_t>::min();
+	constexpr auto maxValue = std::numeric_limits<std::uint8_t>::max();
+
+	for (unsigned int i = 0; i < count; ++i)
+		data[i] = packInteger(values[i], minValue, maxValue);
+}
+
+inline void packIntegers(std::int8_t* data, const double* values, unsigned int count)
+{
+	constexpr auto minValue = std::numeric_limits<std::int8_t>::min();
+	constexpr auto maxValue = std::numeric_limits<std::int8_t>::max();
+
+	for (unsigned int i = 0; i < count; ++i)
+		data[i] = packInteger(values[i], minValue, maxValue);
+}
+
 template <typename T>
 inline void packIntegers(T* data, const double* values, unsigned int count)
 {
+	constexpr auto minValue = std::numeric_limits<T>::min();
+	constexpr auto maxValue = std::numeric_limits<T>::max();
+
+	assert(count <= 4);
+	T alignedData[4];
 	for (unsigned int i = 0; i < count; ++i)
-	{
-		data[i] = packInteger(values[i], std::numeric_limits<T>::min(),
-			std::numeric_limits<T>::max());
-	}
+		alignedData[i] = packInteger(values[i], minValue, maxValue);
+	std::memcpy(data, alignedData, sizeof(T)*count);
 }
 
 template <typename T>
 inline void packDirect(T* data, const double* values, unsigned int count)
 {
+	assert(count <= 4);
+	T alignedData[4];
 	for (unsigned int i = 0; i < count; ++i)
-		data[i] = static_cast<T>(values[i]);
+		alignedData[i] = static_cast<T>(values[i]);
+	std::memcpy(data, alignedData, sizeof(T)*count);
 }
 
 inline void packHalfFloatValues(std::uint16_t* data, const double* values, unsigned int count)
 {
+	assert(count <= 4);
+	std::uint16_t alignedData[4];
 	for (unsigned int i = 0; i < count; ++i)
-		data[i] = glm::packHalf(glm::vec1(static_cast<float>(values[i]))).x;
+		alignedData[i] = glm::packHalf(glm::vec1(static_cast<float>(values[i]))).x;
+	std::memcpy(data, alignedData, sizeof(std::uint16_t)*count);
 }
 
 } // namespace
@@ -272,7 +364,9 @@ bool VertexValue::fromData(const void* data, ElementLayout layout, ElementType t
 			return true;
 		case ElementLayout::W2X10Y10Z10:
 		{
-			std::uint32_t dataValue = *reinterpret_cast<const std::uint32_t*>(data);
+			std::uint32_t dataValue;
+			std::memcpy(&dataValue, reinterpret_cast<const std::uint32_t*>(data),
+				sizeof(std::uint32_t));
 			switch (type)
 			{
 				case ElementType::UNorm:
@@ -294,10 +388,10 @@ bool VertexValue::fromData(const void* data, ElementLayout layout, ElementType t
 					m_values[3] = (dataValue >> 30) & mask2;
 					break;
 				case ElementType::SInt:
-					m_values[0] = makeSigned((dataValue >> 20) & mask10, absMinValue10, mask10);
-					m_values[1] = makeSigned((dataValue >> 10) & mask10, absMinValue10, mask10);
-					m_values[2] = makeSigned(dataValue & mask10, absMinValue10, mask10);
-					m_values[3] = makeSigned((dataValue >> 30) & mask2, absMinValue2, mask2);
+					m_values[0] = makeSigned((dataValue >> 20) & mask10, absMinValue10);
+					m_values[1] = makeSigned((dataValue >> 10) & mask10, absMinValue10);
+					m_values[2] = makeSigned(dataValue & mask10, absMinValue10);
+					m_values[3] = makeSigned((dataValue >> 30) & mask2, absMinValue2);
 					break;
 				default:
 					return false;
@@ -306,7 +400,9 @@ bool VertexValue::fromData(const void* data, ElementLayout layout, ElementType t
 		}
 		case ElementLayout::W2Z10Y10X10:
 		{
-			std::uint32_t dataValue = *reinterpret_cast<const std::uint32_t*>(data);
+			std::uint32_t dataValue;
+			std::memcpy(&dataValue, reinterpret_cast<const std::uint32_t*>(data),
+				sizeof(std::uint32_t));
 			switch (type)
 			{
 				case ElementType::UNorm:
@@ -328,10 +424,10 @@ bool VertexValue::fromData(const void* data, ElementLayout layout, ElementType t
 					m_values[3] = (dataValue >> 30) & mask2;
 					break;
 				case ElementType::SInt:
-					m_values[0] = makeSigned(dataValue & mask10, absMinValue10, mask10);
-					m_values[1] = makeSigned((dataValue >> 10) & mask10, absMinValue10, mask10);
-					m_values[2] = makeSigned((dataValue >> 20) & mask10, absMinValue10, mask10);
-					m_values[3] = makeSigned((dataValue >> 30) & mask2, absMinValue2, mask2);
+					m_values[0] = makeSigned(dataValue & mask10, absMinValue10);
+					m_values[1] = makeSigned((dataValue >> 10) & mask10, absMinValue10);
+					m_values[2] = makeSigned((dataValue >> 20) & mask10, absMinValue10);
+					m_values[3] = makeSigned((dataValue >> 30) & mask2, absMinValue2);
 					break;
 				default:
 					return false;
@@ -623,8 +719,10 @@ bool VertexValue::fromData(const void* data, ElementLayout layout, ElementType t
 		case ElementLayout::Z10Y11X11_UFloat:
 			if (type == ElementType::Float)
 			{
-				glm::vec3 value =
-					glm::unpackF2x11_1x10(*reinterpret_cast<const std::uint32_t*>(data));
+				std::uint32_t dataValue;
+				std::memcpy(&dataValue, reinterpret_cast<const std::uint32_t*>(data),
+					sizeof(std::uint32_t));
+				glm::vec3 value = glm::unpackF2x11_1x10(dataValue);
 				m_values[0] = value[0];
 				m_values[1] = value[1];
 				m_values[2] = value[2];
@@ -636,8 +734,10 @@ bool VertexValue::fromData(const void* data, ElementLayout layout, ElementType t
 		case ElementLayout::E5Z9Y9X9_UFloat:
 			if (type == ElementType::Float)
 			{
-				glm::vec3 value =
-					glm::unpackF3x9_E1x5(*reinterpret_cast<const std::uint32_t*>(data));
+				std::uint32_t dataValue;
+				std::memcpy(&dataValue, reinterpret_cast<const std::uint32_t*>(data),
+					sizeof(std::uint32_t));
+				glm::vec3 value = glm::unpackF3x9_E1x5(dataValue);
 				m_values[0] = value[0];
 				m_values[1] = value[1];
 				m_values[2] = value[2];
@@ -736,7 +836,7 @@ bool VertexValue::toData(void* outData, ElementLayout layout, ElementType type) 
 			return true;
 		case ElementLayout::W2X10Y10Z10:
 		{
-			std::uint32_t& outDataValue = *reinterpret_cast<std::uint32_t*>(outData);
+			std::uint32_t outDataValue;
 			switch (type)
 			{
 				case ElementType::UNorm:
@@ -770,11 +870,13 @@ bool VertexValue::toData(void* outData, ElementLayout layout, ElementType type) 
 				default:
 					return false;
 			}
+			std::memcpy(reinterpret_cast<std::uint32_t*>(outData), &outDataValue,
+				sizeof(std::uint32_t));
 			return true;
 		}
 		case ElementLayout::W2Z10Y10X10:
 		{
-			std::uint32_t& outDataValue = *reinterpret_cast<std::uint32_t*>(outData);
+			std::uint32_t outDataValue;
 			switch (type)
 			{
 				case ElementType::UNorm:
@@ -809,6 +911,8 @@ bool VertexValue::toData(void* outData, ElementLayout layout, ElementType type) 
 				default:
 					return false;
 			}
+			std::memcpy(reinterpret_cast<std::uint32_t*>(outData), &outDataValue,
+				sizeof(std::uint32_t));
 			return true;
 		}
 		case ElementLayout::X16:
@@ -1078,8 +1182,10 @@ bool VertexValue::toData(void* outData, ElementLayout layout, ElementType type) 
 		case ElementLayout::Z10Y11X11_UFloat:
 			if (type == ElementType::Float)
 			{
-				*reinterpret_cast<std::uint32_t*>(outData) =
+				std::uint32_t outDataValue =
 					glm::packF2x11_1x10(glm::vec3(m_values[0], m_values[1], m_values[2]));
+				std::memcpy(reinterpret_cast<std::uint32_t*>(outData), &outDataValue,
+					sizeof(std::uint32_t));
 				return true;
 			}
 			else
@@ -1087,8 +1193,10 @@ bool VertexValue::toData(void* outData, ElementLayout layout, ElementType type) 
 		case ElementLayout::E5Z9Y9X9_UFloat:
 			if (type == ElementType::Float)
 			{
-				*reinterpret_cast<std::uint32_t*>(outData) =
+				std::uint32_t outDataValue =
 					glm::packF3x9_E1x5(glm::vec3(m_values[0], m_values[1], m_values[2]));
+				std::memcpy(reinterpret_cast<std::uint32_t*>(outData), &outDataValue,
+					sizeof(std::uint32_t));
 				return true;
 			}
 			else
