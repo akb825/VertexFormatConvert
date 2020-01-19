@@ -212,3 +212,53 @@ TEST(VertexFormatTest, IsElementValid)
 	EXPECT_FALSE(vfc::isElementValid(vfc::ElementLayout::E5Z9Y9X9_UFloat, vfc::ElementType::SInt));
 	EXPECT_TRUE(vfc::isElementValid(vfc::ElementLayout::E5Z9Y9X9_UFloat, vfc::ElementType::Float));
 }
+
+TEST(VertexFormatTest, AddElement)
+{
+	vfc::VertexFormat vertexFormat;
+	EXPECT_EQ(vfc::VertexFormat::AddResult::Succeeded, vertexFormat.appendElement("foo",
+		vfc::ElementLayout::R8G8B8A8, vfc::ElementType::UNorm));
+	EXPECT_EQ(vfc::VertexFormat::AddResult::Succeeded, vertexFormat.appendElement("bar",
+		vfc::ElementLayout::X32Y32Z32, vfc::ElementType::Float));
+	EXPECT_EQ(vfc::VertexFormat::AddResult::NameNotUnique, vertexFormat.appendElement("bar",
+		vfc::ElementLayout::X32Y32Z32, vfc::ElementType::Float));
+	EXPECT_EQ(vfc::VertexFormat::AddResult::ElementInvalid, vertexFormat.appendElement("baz",
+		vfc::ElementLayout::X32Y32Z32, vfc::ElementType::SNorm));
+
+	EXPECT_EQ(sizeof(std::uint8_t)*4 + sizeof(float)*3, vertexFormat.stride());
+	ASSERT_EQ(2U, vertexFormat.size());
+
+	EXPECT_EQ("foo", vertexFormat[0].name);
+	EXPECT_EQ(vfc::ElementLayout::R8G8B8A8, vertexFormat[0].layout);
+	EXPECT_EQ(vfc::ElementType::UNorm, vertexFormat[0].type);
+	EXPECT_EQ(0U, vertexFormat[0].offset);
+
+	EXPECT_EQ("bar", vertexFormat[1].name);
+	EXPECT_EQ(vfc::ElementLayout::X32Y32Z32, vertexFormat[1].layout);
+	EXPECT_EQ(vfc::ElementType::Float, vertexFormat[1].type);
+	EXPECT_EQ(sizeof(std::uint8_t)*4, vertexFormat[1].offset);
+
+	EXPECT_EQ(vertexFormat.begin(), vertexFormat.find("foo"));
+	EXPECT_EQ(vertexFormat.begin() + 1, vertexFormat.find("bar"));
+	EXPECT_EQ(vertexFormat.end(), vertexFormat.find("baz"));
+}
+
+TEST(VertexFormatTest, ContainsElements)
+{
+	vfc::VertexFormat vertexFormat;
+	EXPECT_EQ(vfc::VertexFormat::AddResult::Succeeded, vertexFormat.appendElement("foo",
+		vfc::ElementLayout::R8G8B8A8, vfc::ElementType::UNorm));
+	EXPECT_EQ(vfc::VertexFormat::AddResult::Succeeded, vertexFormat.appendElement("bar",
+		vfc::ElementLayout::X32Y32Z32, vfc::ElementType::Float));
+	EXPECT_EQ(vfc::VertexFormat::AddResult::Succeeded, vertexFormat.appendElement("baz",
+		vfc::ElementLayout::W2X10Y10Z10, vfc::ElementType::UNorm));
+
+	vfc::VertexFormat otherVertexFormat;
+	EXPECT_EQ(vfc::VertexFormat::AddResult::Succeeded, otherVertexFormat.appendElement("foo",
+		vfc::ElementLayout::X16Y16, vfc::ElementType::Float));
+	EXPECT_EQ(vfc::VertexFormat::AddResult::Succeeded, otherVertexFormat.appendElement("bar",
+		vfc::ElementLayout::Z10Y11X11_UFloat, vfc::ElementType::Float));
+
+	EXPECT_TRUE(vertexFormat.containsElements(otherVertexFormat));
+	EXPECT_FALSE(otherVertexFormat.containsElements(vertexFormat));
+}

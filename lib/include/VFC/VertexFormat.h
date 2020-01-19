@@ -18,7 +18,10 @@
 
 #include <VFC/Config.h>
 #include <VFC/Export.h>
-#include <cstddef>
+#include <cassert>
+#include <cstdint>
+#include <string>
+#include <vector>
 
 /**
  * @file
@@ -31,7 +34,7 @@ namespace vfc
 /**
  * @brief Enum for the element layout within a vertex format.
  */
-enum class ElementLayout
+enum class ElementLayout : std::int8_t
 {
 	Invalid = -1,     ///< Invalid layout.
 	X8,				  ///< X with 8 bits.
@@ -85,7 +88,7 @@ constexpr auto elementLayoutCount = static_cast<unsigned int>(ElementLayout::E5Z
 /**
  * @brief Enum for the type of an element within a vertex format.
  */
-enum class ElementType
+enum class ElementType : std::int8_t
 {
 	Invalid = -1, ///< Invalid type.
 	UNorm,        ///< Integer converted to a float in the range [0, 1].
@@ -136,7 +139,7 @@ VFC_EXPORT ElementType elementTypeFromName(const char* name);
  * @param layout The element layout.
  * @return The size of the element.
  */
-VFC_EXPORT std::size_t elementLayoutSize(ElementLayout layout);
+VFC_EXPORT std::uint32_t elementLayoutSize(ElementLayout layout);
 
 /**
  * @brief Checks if an element layout and type is valid.
@@ -145,5 +148,326 @@ VFC_EXPORT std::size_t elementLayoutSize(ElementLayout layout);
  * @return True if the element layout and type is valid.
  */
 VFC_EXPORT bool isElementValid(ElementLayout layout, ElementType type);
+
+/**
+ * @brief Struct describing a vertex element.
+ */
+struct VertexElement
+{
+	/**
+	 * @brief The name of the element.
+	 *
+	 * This can be used to correlate elements between multiple formats.
+	 */
+	std::string name;
+
+	/**
+	 * @brief The layout of the elment.
+	 */
+	ElementLayout layout;
+
+	/**
+	 * @brief The type of the element.
+	 */
+	ElementType type;
+
+	/**
+	 * @brief The offset in bytes from the start of the vertex to this element.
+	 */
+	std::uint32_t offset;
+
+	/**
+	 * @brief Checks whether this is the same as another vertex element.
+	 * @param other The other format to check.
+	 * @return True if the vertex elements are equivalent.
+	 */
+	bool operator==(const VertexElement& other) const
+	{
+		return name == other.name && layout == other.layout && type == other.type &&
+			offset == other.offset;
+	}
+
+	/**
+	 * @brief Checks whether this is not the same as another vertex element.
+	 * @param other The other element to check.
+	 * @return True if the vertex element are not equivalent.
+	 */
+	bool operator!=(const VertexElement& other) const
+	{
+		return !(*this == other);
+	}
+};
+
+/**
+ * @brief Class describing a vertex format.
+ *
+ * The vertex format is a collection of vertex elements that describe the data layout. Elements
+ * may be accessed similar to std::vector, and this mimicks the relevant interfce for read-only
+ * access.
+ */
+class VFC_EXPORT VertexFormat
+{
+	using ElementVector = std::vector<VertexElement>;
+public:
+	/**
+	 * @brief Type for an array value.
+	 */
+	using value_type = ElementVector::value_type;
+
+	/**
+	 * @brief Type for the array size.
+	 */
+	using size_type = ElementVector::size_type;
+
+	/**
+	 * @brief Type for the difference between elements.
+	 */
+	using difference_type = ElementVector::difference_type;
+
+	/**
+	 * @brief Type for a reference to an element.
+	 */
+	using reference = ElementVector::reference;
+
+	/**
+	 * @brief Type for a const reference to an element.
+	 */
+	using const_reference = ElementVector::const_reference;
+
+	/**
+	 * @brief Type for a pointer to an element.
+	 */
+	using pointer = ElementVector::pointer;
+
+	/**
+	 * @brief Type for a const pointer to an element.
+	 */
+	using const_pointer = ElementVector::const_pointer;
+
+	/**
+	 * @brief Type for an iterator over the elements.
+	 */
+	using iterator = ElementVector::const_iterator;
+
+	/** @copydoc iterator */
+	using const_iterator = ElementVector::const_iterator;
+
+	/**
+	 * @brief Type for an iterator over the reversed elements.
+	 */
+	using reverse_iterator = ElementVector::const_reverse_iterator;
+
+	/** @copydoc reverse_iterator */
+	using const_reverse_iterator = ElementVector::const_reverse_iterator;
+
+	/**
+	 * @brief Enum for the result of adding to the format.
+	 */
+	enum class AddResult
+	{
+		Succeeded,     ///< The element was successfully added.
+		NameNotUnique, ///< The name was not unique.
+		ElementInvalid ///< The element layout and type was invalid.
+	};
+
+	VertexFormat()
+		: m_stride(0)
+	{
+	}
+
+	/**
+	 * @brief Appends an element to the vertex format.
+	 * @param name The name of the element. This must be unique.
+	 * @param layout The layout of the element.
+	 * @param type The type of the element.
+	 * @return The result of adding the element.
+	 */
+	AddResult appendElement(std::string name, ElementLayout layout, ElementType type);
+
+	/**
+	 * @brief Gets the stride of the vertex.
+	 * @return The stride in bytes.
+	 */
+	std::uint32_t stride() const
+	{
+		return m_stride;
+	}
+
+	/**
+	 * @brief Finds a vertex element by name.
+	 * @param name The name of the elment.
+	 * @return The iterator to the element or end() if not found.
+	 */
+	const_iterator find(const char* name) const;
+
+	/** @copydoc find() */
+	const_iterator find(const std::string& name) const
+	{
+		return find(name.c_str());
+	}
+
+	/**
+	 * @brief Checks if this vertex format contains the same elements as another format.
+	 *
+	 * It is valid for this vertex format to contain more elements than other. This will only check
+	 * the name.
+	 *
+	 * @param other The other vertex format to check.
+	 * @return True if this contains all the elements in other.
+	 */
+	bool containsElements(const VertexFormat& other) const;
+
+	/**
+	 * @brief Accesses an element by index.
+	 * @param i The index to access. std::out_of_range will be thrown if i is out of range.
+	 * @return The element at index i.
+	 */
+	const_reference at(size_type i) const
+	{
+		return m_elements.at(i);
+	}
+
+	/**
+	 * @brief Accesses an element by index.
+	 * @param i The index to access.
+	 * @return The element at index i.
+	 */
+	const_reference operator[](size_type i) const
+	{
+		assert(i < m_elements.size());
+		return m_elements[i];
+	}
+
+	/**
+	 * @brief Gets the first element.
+	 * @return The first element.
+	 */
+	const_reference front() const
+	{
+		assert(!m_elements.empty());
+		return m_elements.front();
+	}
+
+	/**
+	 * @brief Gets the last element.
+	 * @return The last element.
+	 */
+	const_reference back() const
+	{
+		assert(!m_elements.empty());
+		return m_elements.back();
+	}
+
+	/**
+	 * @brief Gets an iterator to the first element.
+	 * @return The begin iterator.
+	 */
+	const_iterator begin() const
+	{
+		return m_elements.begin();
+	}
+
+	/** @copydoc begin() */
+	const_iterator cbegin() const
+	{
+		return m_elements.cbegin();
+	}
+
+	/**
+	 * @brief Gets an iterator past the last element.
+	 * @return The end iterator.
+	 */
+	const_iterator end() const
+	{
+		return m_elements.end();
+	}
+
+	/** @copydoc end() */
+	const_iterator cend() const
+	{
+		return m_elements.cend();
+	}
+
+	/**
+	 * @brief Gets a reversed iterator to the last element.
+	 * @return The reversed begin iterator.
+	 */
+	const_reverse_iterator rbegin() const
+	{
+		return m_elements.rbegin();
+	}
+
+	/** @copydoc rbegin() */
+	const_reverse_iterator crbegin() const
+	{
+		return m_elements.crbegin();
+	}
+
+	/**
+	 * @brief Gets a reversed iterator past the first element.
+	 * @return The end iterator.
+	 */
+	const_reverse_iterator rend() const
+	{
+		return m_elements.rend();
+	}
+
+	/** @copydoc rend() */
+	const_reverse_iterator crend() const
+	{
+		return m_elements.crend();
+	}
+
+	/**
+	 * @brief Gets whether or not the elements are empty.
+	 * @return True if there are no elements.
+	 */
+	bool empty() const
+	{
+		return m_elements.empty();
+	}
+
+	/**
+	 * @brief Gets the number of elements.
+	 * @return The number of elements.
+	 */
+	size_type size() const
+	{
+		return m_elements.size();
+	}
+
+	/**
+	 * @brief Clears the vertex format to its default state.
+	 */
+	void clear()
+	{
+		m_elements.clear();
+		m_stride = 0;
+	}
+
+	/**
+	 * @brief Checks whether this is the same as another vertex format.
+	 * @param other The other format to check.
+	 * @return True if the vertex formats are equivalent.
+	 */
+	bool operator==(const VertexFormat& other) const
+	{
+		return m_elements == other.m_elements;
+	}
+
+	/**
+	 * @brief Checks whether this is not the same as another vertex format.
+	 * @param other The other format to check.
+	 * @return True if the vertex formats are not equivalent.
+	 */
+	bool operator!=(const VertexFormat& other) const
+	{
+		return !(*this == other);
+	}
+
+private:
+	ElementVector m_elements;
+	std::uint32_t m_stride;
+};
 
 } // namespace vfc

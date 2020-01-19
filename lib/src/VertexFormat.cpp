@@ -16,9 +16,8 @@
 
 #include <VFC/VertexFormat.h>
 
-#include <cassert>
+#include <algorithm>
 #include <cctype>
-#include <cstdint>
 #include <unordered_map>
 #include <utility>
 
@@ -133,28 +132,28 @@ static_assert(
 	sizeof(colorElementLayoutNames)/sizeof(*colorElementLayoutNames) == elementLayoutCount,
 	"Unexpected colorElementLayoutNames size.");
 
-const std::size_t elementLayoutSizes[] =
+const std::uint32_t elementLayoutSizes[] =
 {
-	sizeof(std::uint8_t),	 // X8
-	sizeof(std::uint8_t)*2,	 // X8Y8
-	sizeof(std::uint8_t)*3,	 // X8Y8Z8
-	sizeof(std::uint8_t)*4,	 // X8Y8Z8W8
-	sizeof(std::uint32_t),	 // W2X10Y10Z1,
-	sizeof(std::uint32_t),	 // W2Z10Y10X10
-	sizeof(std::uint16_t),	 // X16
-	sizeof(std::uint16_t)*2, // X16Y16
-	sizeof(std::uint16_t)*3, // X16Y16Z16
-	sizeof(std::uint16_t)*4, // X16Y16Z16W16
-	sizeof(std::uint32_t),	 // X32
-	sizeof(std::uint32_t)*2, // X32Y32
-	sizeof(std::uint32_t)*3, // X32Y32Z32
-	sizeof(std::uint32_t)*4, // X32Y32Z32W32
-	sizeof(std::uint64_t),	 // X64
-	sizeof(std::uint64_t)*2, // X64Y64
-	sizeof(std::uint64_t)*3, // X64Y64Z64
-	sizeof(std::uint64_t)*4, // X64Y64Z64W64
-	sizeof(std::uint32_t),   // Z10Y11X11_UFloat
-	sizeof(std::uint32_t)    // E5Z9Y9X9_UFloat
+	static_cast<std::uint32_t>(sizeof(std::uint8_t)),    // X8
+	static_cast<std::uint32_t>(sizeof(std::uint8_t)*2),  // X8Y8
+	static_cast<std::uint32_t>(sizeof(std::uint8_t)*3),  // X8Y8Z8
+	static_cast<std::uint32_t>(sizeof(std::uint8_t)*4),  // X8Y8Z8W8
+	static_cast<std::uint32_t>(sizeof(std::uint32_t)),   // W2X10Y10Z1,
+	static_cast<std::uint32_t>(sizeof(std::uint32_t)),   // W2Z10Y10X10
+	static_cast<std::uint32_t>(sizeof(std::uint16_t)),   // X16
+	static_cast<std::uint32_t>(sizeof(std::uint16_t)*2), // X16Y16
+	static_cast<std::uint32_t>(sizeof(std::uint16_t)*3), // X16Y16Z16
+	static_cast<std::uint32_t>(sizeof(std::uint16_t)*4), // X16Y16Z16W16
+	static_cast<std::uint32_t>(sizeof(std::uint32_t)),   // X32
+	static_cast<std::uint32_t>(sizeof(std::uint32_t)*2), // X32Y32
+	static_cast<std::uint32_t>(sizeof(std::uint32_t)*3), // X32Y32Z32
+	static_cast<std::uint32_t>(sizeof(std::uint32_t)*4), // X32Y32Z32W32
+	static_cast<std::uint32_t>(sizeof(std::uint64_t)),   // X64
+	static_cast<std::uint32_t>(sizeof(std::uint64_t)*2), // X64Y64
+	static_cast<std::uint32_t>(sizeof(std::uint64_t)*3), // X64Y64Z64
+	static_cast<std::uint32_t>(sizeof(std::uint64_t)*4), // X64Y64Z64W64
+	static_cast<std::uint32_t>(sizeof(std::uint32_t)),   // Z10Y11X11_UFloat
+	static_cast<std::uint32_t>(sizeof(std::uint32_t))    // E5Z9Y9X9_UFloat
 };
 
 static_assert(sizeof(elementLayoutSizes)/sizeof(*elementLayoutSizes) == elementLayoutCount,
@@ -270,7 +269,7 @@ ElementType elementTypeFromName(const char* name)
 	return it->second;
 }
 
-std::size_t elementLayoutSize(ElementLayout layout)
+std::uint32_t elementLayoutSize(ElementLayout layout)
 {
 	auto index = static_cast<unsigned int>(layout);
 	if (index >= elementLayoutCount)
@@ -327,6 +326,37 @@ bool isElementValid(ElementLayout layout, ElementType type)
 		default:
 			return false;
 	}
+}
+
+VertexFormat::AddResult VertexFormat::appendElement(std::string name, ElementLayout layout,
+	ElementType type)
+{
+	if (!isElementValid(layout, type))
+		return AddResult::ElementInvalid;
+
+	if (find(name) != end())
+		return AddResult::NameNotUnique;
+
+	m_elements.push_back(VertexElement{std::move(name), layout, type, m_stride});
+	m_stride += elementLayoutSize(layout);
+	return AddResult::Succeeded;
+}
+
+VertexFormat::const_iterator VertexFormat::find(const char* name) const
+{
+	return std::find_if(m_elements.begin(), m_elements.end(),
+		[name](const VertexElement& element) {return element.name == name;});
+}
+
+bool VertexFormat::containsElements(const VertexFormat& other) const
+{
+	for (const VertexElement& element : other)
+	{
+		if (find(element.name) == end())
+			return false;
+	}
+
+	return true;
 }
 
 } // namespace vfc

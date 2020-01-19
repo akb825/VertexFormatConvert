@@ -15,6 +15,8 @@
  */
 
 #include <VFC/VertexValue.h>
+
+#include <VFC/VertexFormat.h>
 #include <cassert>
 #include <cmath>
 #include <cstdint>

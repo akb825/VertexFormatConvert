@@ -18,12 +18,15 @@
 
 #include <VFC/Config.h>
 #include <VFC/Export.h>
-#include <VFC/VertexFormat.h>
 #include <algorithm>
 #include <cassert>
+#include <cstdint>
 
 namespace vfc
 {
+
+enum class ElementLayout : std::int8_t;
+enum class ElementType : std::int8_t;
 
 /**
  * @brief Class that contains the value of a vertex, which can be converted between formats.
