@@ -213,6 +213,54 @@ TEST(VertexFormatTest, IsElementValid)
 	EXPECT_TRUE(vfc::isElementValid(vfc::ElementLayout::E5Z9Y9X9_UFloat, vfc::ElementType::Float));
 }
 
+TEST(VertexFormatTest, PrimitiveTypeMapping)
+{
+	EXPECT_EQ(nullptr, vfc::primitiveTypeName(vfc::PrimitiveType::Invalid));
+	EXPECT_EQ(vfc::PrimitiveType::Invalid, vfc::primitiveTypeFromName("asdf"));
+	EXPECT_EQ(vfc::PrimitiveType::Invalid, vfc::primitiveTypeFromName(nullptr));
+
+	for (unsigned int i = 0; i < vfc::primitiveTypeCount; ++i)
+	{
+		auto primitiveType = static_cast<vfc::PrimitiveType>(i);
+		EXPECT_EQ(primitiveType, vfc::primitiveTypeFromName(vfc::primitiveTypeName(primitiveType)));
+
+		std::string lowercaseName = vfc::primitiveTypeName(primitiveType);
+		for (char& c : lowercaseName)
+			c = static_cast<char>(tolower(c));
+		EXPECT_EQ(primitiveType, vfc::primitiveTypeFromName(lowercaseName.c_str()));
+	}
+}
+
+TEST(VertexFormatTest, IsVertexCountValid)
+{
+	EXPECT_TRUE(vfc::isVertexCountValid(vfc::PrimitiveType::PointList, 5));
+
+	EXPECT_FALSE(vfc::isVertexCountValid(vfc::PrimitiveType::LineList, 5));
+	EXPECT_TRUE(vfc::isVertexCountValid(vfc::PrimitiveType::LineList, 6));
+
+	EXPECT_TRUE(vfc::isVertexCountValid(vfc::PrimitiveType::LineStrip, 5));
+	EXPECT_FALSE(vfc::isVertexCountValid(vfc::PrimitiveType::LineStrip, 1));
+
+	EXPECT_FALSE(vfc::isVertexCountValid(vfc::PrimitiveType::TriangleList, 4));
+	EXPECT_FALSE(vfc::isVertexCountValid(vfc::PrimitiveType::TriangleList, 5));
+	EXPECT_TRUE(vfc::isVertexCountValid(vfc::PrimitiveType::TriangleList, 6));
+
+	EXPECT_FALSE(vfc::isVertexCountValid(vfc::PrimitiveType::TriangleStrip, 1));
+	EXPECT_FALSE(vfc::isVertexCountValid(vfc::PrimitiveType::TriangleStrip, 2));
+	EXPECT_TRUE(vfc::isVertexCountValid(vfc::PrimitiveType::TriangleStrip, 3));
+	EXPECT_TRUE(vfc::isVertexCountValid(vfc::PrimitiveType::TriangleStrip, 6));
+
+	EXPECT_FALSE(vfc::isVertexCountValid(vfc::PrimitiveType::TriangleFan, 1));
+	EXPECT_FALSE(vfc::isVertexCountValid(vfc::PrimitiveType::TriangleFan, 2));
+	EXPECT_TRUE(vfc::isVertexCountValid(vfc::PrimitiveType::TriangleFan, 3));
+	EXPECT_TRUE(vfc::isVertexCountValid(vfc::PrimitiveType::TriangleFan, 6));
+
+	EXPECT_FALSE(vfc::isVertexCountValid(vfc::PrimitiveType::PatchList, 1, 4));
+	EXPECT_FALSE(vfc::isVertexCountValid(vfc::PrimitiveType::PatchList, 2, 4));
+	EXPECT_FALSE(vfc::isVertexCountValid(vfc::PrimitiveType::PatchList, 3, 4));
+	EXPECT_TRUE(vfc::isVertexCountValid(vfc::PrimitiveType::PatchList, 4, 4));
+}
+
 TEST(VertexFormatTest, AddElement)
 {
 	vfc::VertexFormat vertexFormat;

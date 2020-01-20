@@ -171,6 +171,20 @@ const char* const elementTypeNames[] =
 static_assert(sizeof(elementTypeNames)/sizeof(*elementTypeNames) == elementTypeCount,
 	"Unexpected elementTypeNames size.");
 
+const char* const primitiveTypeNames[] =
+{
+	"PointList",
+	"LineList",
+	"LineStrip",
+	"TriangleList",
+	"TriangleStrip",
+	"TriangleFan",
+	"PatchList"
+};
+
+static_assert(sizeof(primitiveTypeNames)/sizeof(*primitiveTypeNames) == primitiveTypeCount,
+	"Unexpected primitiveTypeNames size.");
+
 const std::unordered_map<StringRef, ElementLayout, StringRefHash> elementLayoutMap =
 {
 	{"X8", ElementLayout::X8},
@@ -225,6 +239,17 @@ const std::unordered_map<StringRef, ElementType, StringRefHash> elementTypeMap =
 	{"Float", ElementType::Float}
 };
 
+const std::unordered_map<StringRef, PrimitiveType, StringRefHash> primitiveTypeMap =
+{
+	{"PointList", PrimitiveType::PointList},
+	{"LineList", PrimitiveType::LineList},
+	{"LineStrip", PrimitiveType::LineStrip},
+	{"TriangleList", PrimitiveType::TriangleList},
+	{"TriangleStrip", PrimitiveType::TriangleStrip},
+	{"TriangleFan", PrimitiveType::TriangleFan},
+	{"PatchList", PrimitiveType::PatchList}
+};
+
 } // namespace
 
 const char* elementLayoutName(ElementLayout layout, bool color)
@@ -234,15 +259,6 @@ const char* elementLayoutName(ElementLayout layout, bool color)
 		return nullptr;
 
 	return color ? colorElementLayoutNames[index] : elementLayoutNames[index];
-}
-
-const char* elementTypeName(ElementType type)
-{
-	auto index = static_cast<unsigned int>(type);
-	if (index >= elementTypeCount)
-		return nullptr;
-
-	return elementTypeNames[index];
 }
 
 ElementLayout elementLayoutFromName(const char* name)
@@ -255,6 +271,15 @@ ElementLayout elementLayoutFromName(const char* name)
 		return ElementLayout::Invalid;
 
 	return it->second;
+}
+
+const char* elementTypeName(ElementType type)
+{
+	auto index = static_cast<unsigned int>(type);
+	if (index >= elementTypeCount)
+		return nullptr;
+
+	return elementTypeNames[index];
 }
 
 ElementType elementTypeFromName(const char* name)
@@ -323,6 +348,51 @@ bool isElementValid(ElementLayout layout, ElementType type)
 		case ElementLayout::Z10Y11X11_UFloat:
 		case ElementLayout::E5Z9Y9X9_UFloat:
 			return type == ElementType::Float;
+		default:
+			return false;
+	}
+}
+
+const char* primitiveTypeName(PrimitiveType type)
+{
+	auto index = static_cast<unsigned int>(type);
+	if (index >= primitiveTypeCount)
+		return nullptr;
+
+	return primitiveTypeNames[index];
+}
+
+PrimitiveType primitiveTypeFromName(const char* name)
+{
+	if (!name)
+		return PrimitiveType::Invalid;
+
+	auto it = primitiveTypeMap.find(name);
+	if (it == primitiveTypeMap.end())
+		return PrimitiveType::Invalid;
+
+	return it->second;
+}
+
+bool isVertexCountValid(PrimitiveType primitiveType, std::uint32_t vertexCount,
+	unsigned int patchSize)
+{
+	switch (primitiveType)
+	{
+		case PrimitiveType::PointList:
+			return true;
+		case PrimitiveType::LineList:
+			return (vertexCount & 1) == 0;
+		case PrimitiveType::LineStrip:
+			return vertexCount != 1;
+		case PrimitiveType::TriangleList:
+			return vertexCount % 3 == 0;
+		case PrimitiveType::TriangleStrip:
+		case PrimitiveType::TriangleFan:
+			return vertexCount == 0 || vertexCount >= 3;
+		case PrimitiveType::PatchList:
+			assert(patchSize > 0);
+			return vertexCount % patchSize == 0;
 		default:
 			return false;
 	}

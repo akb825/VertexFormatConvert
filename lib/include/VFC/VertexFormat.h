@@ -104,34 +104,54 @@ enum class ElementType : std::int8_t
 constexpr auto elementTypeCount = static_cast<unsigned int>(ElementType::Float) + 1;
 
 /**
-* @brief Gets a string name for an element layout.
-* @param layout The element layout.
-* @param color True if the color (RGBA) names should be used instead.
-* @return The name of the layout or nullptr if the layout is invalid.
-*/
+ * @brief Enum for the type of primitive the geometry represents.
+ */
+enum class PrimitiveType : std::int8_t
+{
+	Invalid = -1,
+	PointList,
+	LineList,
+	LineStrip,
+	TriangleList,
+	TriangleStrip,
+	TriangleFan,
+	PatchList
+};
+
+/**
+ * @brief The number of PrimitiveType enum values.
+ */
+constexpr auto primitiveTypeCount = static_cast<unsigned int>(PrimitiveType::PatchList) + 1;
+
+/**
+ * @brief Gets a string name for an element layout.
+ * @param layout The element layout.
+ * @param color True if the color (RGBA) names should be used instead.
+ * @return The name of the layout or nullptr if the layout is invalid.
+ */
 VFC_EXPORT const char* elementLayoutName(ElementLayout layout, bool color = false);
 
 /**
-* @brief Gets the element layout from the name.
-* @param name The name of the element. This is the C++ enum identifier as a string, and is
-*     case-insensitive.
-* @return The layout. If the name cannot be found, ElementLayout::Invalid is returned.
-*/
+ * @brief Gets the element layout from the name.
+ * @param name The name of the element. This is the C++ enum identifier as a string, and is
+ *     case-insensitive.
+ * @return The layout. If the name cannot be found, ElementLayout::Invalid is returned.
+ */
 VFC_EXPORT ElementLayout elementLayoutFromName(const char* name);
 
 /**
-* @brief Gets a string name for an element type.
-* @param type The element type.
-* @return The name of the type or nullptr if the type is invalid.
-*/
+ * @brief Gets a string name for an element type.
+ * @param type The element type.
+ * @return The name of the type or nullptr if the type is invalid.
+ */
 VFC_EXPORT const char* elementTypeName(ElementType type);
 
 /**
-* @brief Gets the element type from the name.
-* @param name The name of the type. This is the C++ enum identifier as a string, and is
-*     case-insensitive.
-* @return The type. If the name cannot be found, ElementType::Invalid is returned.
-*/
+ * @brief Gets the element type from the name.
+ * @param name The name of the type. This is the C++ enum identifier as a string, and is
+ *     case-insensitive.
+ * @return The type. If the name cannot be found, ElementType::Invalid is returned.
+ */
 VFC_EXPORT ElementType elementTypeFromName(const char* name);
 
 /**
@@ -148,6 +168,31 @@ VFC_EXPORT std::uint32_t elementLayoutSize(ElementLayout layout);
  * @return True if the element layout and type is valid.
  */
 VFC_EXPORT bool isElementValid(ElementLayout layout, ElementType type);
+
+/**
+ * @brief Gets a string name for an primitive type.
+ * @param type The primitive type.
+ * @return The name of the type or nullptr if the type is invalid.
+ */
+VFC_EXPORT const char* primitiveTypeName(PrimitiveType type);
+
+/**
+ * @brief Gets the primitive type from the name.
+ * @param name The name of the type. This is the C++ enum identifier as a string, and is
+ *     case-insensitive.
+ * @return The type. If the name cannot be found, PrimitiveType::Invalid is returned.
+ */
+VFC_EXPORT PrimitiveType primitiveTypeFromName(const char* name);
+
+/**
+ * @brief Checks whether or not a vertex count is valid.
+ * @param primitiveType The primitive type.
+ * @param vertexCount The number of vertices.
+ * @param patchSize The size of the patch when primitiveType is PrimitiveType::PatchList.
+ * @return True if the vertex count is valid.
+ */
+VFC_EXPORT bool isVertexCountValid(PrimitiveType primitiveType, std::uint32_t vertexCount,
+	unsigned int patchSize = 0);
 
 /**
  * @brief Struct describing a vertex element.
