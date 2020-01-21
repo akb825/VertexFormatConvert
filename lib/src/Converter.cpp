@@ -17,34 +17,299 @@
 
 #include <VFC/Converter.h>
 #include <VFC/VertexValue.h>
+#include <algorithm>
 #include <cassert>
+#include <cstring>
 #include <iostream>
 #include <limits>
+#include <unordered_set>
 
 namespace vfc
 {
+
+namespace
+{
+
+constexpr std::uint32_t hashSeed = 0xc70f6907U;
+
+
+
+// MurmurHash2, with some adjustments for code clarity and alignment guarantees.
+// https://github.com/aappleby/smhasher/blob/master/src/MurmurHash2.cpp
+#if VFC_64BIT
+std::size_t murmurHash2(const std::uint8_t* data, std::uint32_t size)
+{
+	const std::uint64_t m = 0xc6a4a7935bd1e995ULL;
+	const int r = 47;
+
+	std::uint64_t h = hashSeed ^ (size * m);
+
+	while (size >= 8)
+	{
+		std::uint64_t k;
+		std::memcpy(&k, data, sizeof(std::uint64_t));
+
+		k *= m;
+		k ^= k >> r;
+		k *= m;
+
+		h ^= k;
+		h *= m;
+
+		data += 8;
+		size -= 8;
+	}
+
+	switch (size)
+	{
+		case 7: h ^= std::uint64_t(data[6]) << 48;
+		case 6: h ^= std::uint64_t(data[5]) << 40;
+		case 5: h ^= std::uint64_t(data[4]) << 32;
+		case 4: h ^= std::uint64_t(data[3]) << 24;
+		case 3: h ^= std::uint64_t(data[2]) << 16;
+		case 2: h ^= std::uint64_t(data[1]) << 8;
+		case 1: h ^= std::uint64_t(data[0]);
+		h *= m;
+	};
+
+	h ^= h >> r;
+	h *= m;
+	h ^= h >> r;
+
+	return h;
+}
+#else
+inline void mmix(std::uint32_t& h, std::uint32_t k, std::uint32_t m)
+{
+	const int r = 24;
+	k *= m;
+	k ^= k >> r;
+	k *= m;
+	h *= m;
+	h ^= k;
+}
+
+std::size_t murmurHash2(const std::uint8_t* data, std::uint32_t size)
+{
+	const std::uint32_t m = 0x5bd1e995;
+	std::uint32_t l = size;
+	std::uint32_t h = hashSeed;
+
+	while (size >= 4)
+	{
+		std::uint32_t k;
+		std::memcpy(&k, data, sizeof(std::uint32_t));
+
+		mmix(h, k, m);
+
+		data += 4;
+		size -= 4;
+	}
+
+	std::uint32_t t = 0;
+	switch (size)
+	{
+		case 3: t ^= data[2] << 16;
+		case 2: t ^= data[1] << 8;
+		case 1: t ^= data[0];
+	}
+
+	mmix(h, t, m);
+	mmix(h, l, m);
+
+	h ^= h >> 13;
+	h *= m;
+	h ^= h >> 15;
+
+	return h;
+}
+#endif
+
+struct VertexRef
+{
+	VertexRef(const std::vector<std::uint8_t>& _data, std::uint32_t _index, std::uint32_t _size)
+		: data(&_data), index(_index), size(_size), offset(static_cast<std::size_t>(_index)*_size)
+	{
+	}
+
+	const std::vector<std::uint8_t>* data;
+	std::uint32_t index;
+	std::uint32_t size;
+	std::size_t offset;
+
+	bool operator==(const VertexRef& other) const
+	{
+		assert(size == other.size);
+		return std::memcmp(data->data() + offset, other.data->data() + other.offset, size) == 0;
+	}
+
+	bool operator!=(const VertexRef& other) const
+	{
+		return !(*this == other);
+	}
+};
+
+struct VertexHash
+{
+	std::size_t operator()(const VertexRef& vertex) const
+	{
+		auto offset = static_cast<std::size_t>(vertex.index)*vertex.size;
+		return murmurHash2(vertex.data->data() + offset, vertex.size);
+	}
+};
+
+using VertexSet = std::unordered_set<VertexRef, VertexHash>;
+
+std::uint32_t addVertex(std::vector<std::uint8_t>& vertices, const std::uint8_t* vertex,
+		std::size_t vertexSize, VertexSet& vertexSet)
+{
+	assert(vertices.size() % vertexSize == 0);
+	auto size = static_cast<std::uint32_t>(vertexSize);
+
+	// Expected that almost always adding a new vertex, so optimize for that.
+	auto index = static_cast<std::uint32_t>(vertices.size()/size);
+	vertices.insert(vertices.end(), vertex, vertex + vertexSize);
+	VertexRef ref(vertices, index, size);
+	auto insertPair = vertexSet.insert(ref);
+	if (!insertPair.second)
+	{
+		assert(insertPair.first->index < ref.index);
+		// Remove the added vertex data.
+		vertices.resize(index);
+		return insertPair.first->index;
+	}
+
+	return index;
+}
+
+std::uint32_t addVertex(std::vector<std::uint8_t>& vertices,
+	const std::vector<std::uint8_t>& vertex, VertexSet& vertexSet)
+{
+	return addVertex(vertices, vertex.data(), vertex.size(), vertexSet);
+}
+
+void addIndex(std::vector<std::uint8_t>& indices, IndexType type, unsigned int sizeofIndex,
+	std::uint32_t value)
+{
+	std::size_t nextIndex = indices.size()/sizeofIndex;
+	indices.resize(indices.size() + sizeofIndex);
+	setIndexValue(type, indices.data(), nextIndex, value);
+}
+
+unsigned int primitiveIndexStride(PrimitiveType type, unsigned int patchPoints)
+{
+	switch (type)
+	{
+		case PrimitiveType::Invalid:
+			assert(false);
+			return 0;
+		case PrimitiveType::PointList:
+		case PrimitiveType::LineStrip:
+		case PrimitiveType::TriangleStrip:
+		case PrimitiveType::TriangleFan:
+			return 1;
+		case PrimitiveType::LineList:
+			return 2;
+		case PrimitiveType::TriangleList:
+			return 3;
+		case PrimitiveType::PatchList:
+			return patchPoints;
+	}
+
+	assert(false);
+	return 0;
+}
+
+void copyVertex(std::vector<std::uint8_t>& vertices, std::size_t vertexSize, VertexSet& vertexSet,
+	std::vector<std::uint8_t>& indices, IndexType indexType, unsigned int sizeofIndex,
+	std::uint32_t baseVertex, std::uint32_t indexIndex, std::int32_t prevBaseVertex)
+{
+	std::uint32_t prevIndex = getIndexValue(indexType, indices.data(), indexIndex) + prevBaseVertex;
+	std::uint32_t newIndex =
+		addVertex(vertices, vertices.data() + prevIndex*vertexSize, vertexSize, vertexSet);
+	addIndex(indices, indexType, sizeofIndex, newIndex - baseVertex);
+}
+
+void copyConnectedVertices(std::vector<std::uint8_t>& vertices, std::size_t vertexSize,
+	VertexSet& vertexSet, std::vector<std::uint8_t>& indices, IndexType indexType,
+	unsigned int sizeofIndex, std::int32_t baseVertex, PrimitiveType primitiveType,
+	std::uint32_t lastRestartIndex, std::uint32_t& prevIndexCount, std::int32_t prevBaseVertex)
+{
+	assert(static_cast<std::size_t>(baseVertex) == vertices.size()/vertexSize);
+	auto indexCount = static_cast<std::uint32_t>(indices.size()/sizeofIndex);
+	switch (primitiveType)
+	{
+		case PrimitiveType::LineStrip:
+			if (lastRestartIndex != indexCount - 1)
+			{
+				copyVertex(vertices, vertexSize, vertexSet, indices, indexType, sizeofIndex,
+					baseVertex, indexCount - 1, prevBaseVertex);
+			}
+			break;
+		case PrimitiveType::TriangleStrip:
+		{
+			std::uint32_t copyBegin =
+				std::max(lastRestartIndex + 1, indexCount - 2);
+			for (std::uint32_t k = copyBegin; k < indexCount; ++k)
+			{
+				copyVertex(vertices, vertexSize, vertexSet, indices, indexType, sizeofIndex,
+					baseVertex, k, prevBaseVertex);
+			}
+			break;
+		}
+		case PrimitiveType::TriangleFan:
+			if (lastRestartIndex != indexCount - 1)
+			{
+				// First vertex in the fan.
+				copyVertex(vertices, vertexSize, vertexSet, indices, indexType, sizeofIndex,
+					baseVertex, lastRestartIndex + 1, prevBaseVertex);
+				if (lastRestartIndex != indexCount - 2)
+				{
+					// Last point to continue for the triangle.
+					copyVertex(vertices, vertexSize, vertexSet, indices, indexType, sizeofIndex,
+						baseVertex, indexCount - 1,prevBaseVertex);
+				}
+			}
+			break;
+		default:
+			break;
+	}
+
+	// If we had to copy all of the vertices since the last restart, there wasn't a full primitive
+	// and the number of indices for the last index buffer must be reduced.
+	auto addedVertices = static_cast<std::uint32_t>(vertices.size()/vertexSize) - baseVertex;
+	if (lastRestartIndex + 1 == baseVertex - addedVertices)
+		prevIndexCount -= addedVertices;
+}
+
+} // namespace
 
 void Converter::stderrErrorFunction(const char* message)
 {
 	std::cerr << message << std::endl;
 }
 
-Converter::Converter(VertexFormat format, IndexType indexType, PrimitiveType primitiveType,
+Converter::Converter(VertexFormat vertexFormat, IndexType indexType, PrimitiveType primitiveType,
 	unsigned int patchPoints, ErrorFunction errorFunction)
-	: Converter(std::move(format), indexType, primitiveType, patchPoints,
+	: Converter(std::move(vertexFormat), indexType, primitiveType, patchPoints,
 		maxIndexValue(indexType), std::move(errorFunction))
 {
 }
 
-Converter::Converter(VertexFormat format, IndexType indexType, PrimitiveType primitiveType,
+Converter::Converter(VertexFormat vertexFormat, IndexType indexType, PrimitiveType primitiveType,
 	unsigned int patchPoints, std::uint32_t maxIndexValue, ErrorFunction errorFunction)
-	: m_format(std::move(format)), m_indexType(indexType), m_primitiveType(primitiveType),
-		m_patchPoints(patchPoints), m_maxIndexValue(maxIndexValue),
-		m_errorFunction(std::move(errorFunction)),
-		m_elementMapping(m_format.size(), VertexElementRef{0, nullptr}), m_vertexCount(0),
-		m_indexCount(0)
+	: m_vertexFormat(std::move(vertexFormat))
+	, m_indexType(indexType)
+	, m_primitiveType(primitiveType)
+	, m_patchPoints(patchPoints)
+	, m_maxIndexValue(maxIndexValue)
+	, m_errorFunction(std::move(errorFunction))
+	, m_elementMapping(m_vertexFormat.size(), VertexElementRef{0, nullptr, Transform::Identity,
+		VertexValue::initialBoundsMin, VertexValue::initialBoundsMax})
+	, m_indexCount(0)
 {
-	assert(!m_format.empty());
+	assert(!m_vertexFormat.empty());
+	assert(m_primitiveType != PrimitiveType::Invalid);
 	assert(m_primitiveType != PrimitiveType::PatchList || m_patchPoints > 0);
 	assert(indexType == IndexType::NoIndices ||
 		m_maxIndexValue <= primitiveRestartIndexValue(indexType));
@@ -82,16 +347,17 @@ bool Converter::addVertexStream(VertexFormat vertexFormat, const void* vertexDat
 
 	bool hasElements = false;
 	bool duplicateElements = false;
-	for (std::size_t i = 0; i < m_format.size(); ++i)
+	std::string message;
+	for (std::size_t i = 0; i < m_vertexFormat.size(); ++i)
 	{
-		if (vertexFormat.find(m_format[i].name) == vertexFormat.end())
+		if (vertexFormat.find(m_vertexFormat[i].name) == vertexFormat.end())
 			continue;
 
 		hasElements = true;
 		if (m_elementMapping[i].element)
 		{
-			std::string message = "Vertex element '";
-			message += m_format[i].name;
+			message = "Vertex element '";
+			message += m_vertexFormat[i].name;
 			message += "' is present in multiple vertex streams.";
 			logError(message.c_str());
 			duplicateElements = true;
@@ -105,17 +371,36 @@ bool Converter::addVertexStream(VertexFormat vertexFormat, const void* vertexDat
 		return true;
 
 	auto streamIndex = static_cast<std::uint32_t>(m_vertexStreams.size());
-	for (std::size_t i = 0; i < m_format.size(); ++i)
+	for (std::size_t i = 0; i < m_vertexFormat.size(); ++i)
 	{
-		if (vertexFormat.find(m_format[i].name) == vertexFormat.end())
+		if (vertexFormat.find(m_vertexFormat[i].name) == vertexFormat.end())
 			continue;
 
 		m_elementMapping[i].streamIndex = streamIndex;
 		m_elementMapping[i].element = &vertexFormat[i];
 	}
 
-	m_vertexStreams.push_back(
-		VertexStream{vertexData, indexData, std::move(vertexFormat), vertexCount, indexType});
+	m_vertexStreams.push_back(VertexStream{reinterpret_cast<const std::uint8_t*>(vertexData),
+		indexData, std::move(vertexFormat), vertexCount, indexType});
+	return true;
+}
+
+Converter::Transform Converter::getElementTransform(const char* name) const
+{
+	auto foundElement = m_vertexFormat.find(name);
+	if (foundElement == m_vertexFormat.end())
+		return Transform::Identity;
+
+	return m_elementMapping[foundElement - m_vertexFormat.begin()].transform;
+}
+
+bool Converter::setElementTransform(const char* name, Transform transform)
+{
+	auto foundElement = m_vertexFormat.find(name);
+	if (foundElement == m_vertexFormat.end())
+		return false;
+
+	m_elementMapping[foundElement - m_vertexFormat.begin()].transform = transform;
 	return true;
 }
 
@@ -123,6 +408,193 @@ void Converter::logError(const char* message) const
 {
 	if (m_errorFunction)
 		m_errorFunction(message);
+}
+
+bool Converter::convert()
+{
+	if (m_vertexFormat.empty())
+	{
+		logError("Converter is invalid.");
+		return false;
+	}
+
+	if (!m_vertices.empty())
+	{
+		logError("Converter::convert() may only be called once.");
+		return false;
+	}
+
+	bool hasAllElements = true;
+	std::string message;
+	for (std::size_t i = 0; i < m_elementMapping.size(); ++i)
+	{
+		if (m_elementMapping[i].element)
+			continue;
+
+		message = "Vertex element '";
+		message += m_vertexFormat[i].name;
+		message += "' has no corresponding input vertex stream.";
+		logError(message.c_str());
+		hasAllElements = false;
+	}
+
+	if (!hasAllElements)
+		return false;
+
+	// First need to gather the bounds. Loop over the streams first for better cache efficiency.
+	std::uint32_t primitiveRestart = primitiveRestartIndexValue(m_indexType);
+	for (VertexElementRef& elementRef : m_elementMapping)
+	{
+		const VertexStream& stream = m_vertexStreams[elementRef.streamIndex];
+		assert(elementRef.element);
+		const VertexElement& element = *elementRef.element;
+		for (std::uint32_t i = 0; i < m_indexCount; ++i)
+		{
+			std::uint32_t indexValue = getIndexValue(stream.indexType, stream.indexData, i, i);
+			if (indexValue == primitiveRestart)
+			{
+				if (m_indexType == IndexType::NoIndices)
+				{
+					logError("Indices must be output if a primitive restart is used.");
+					return false;
+				}
+				continue;
+			}
+
+			if (indexValue >= stream.vertexCount)
+			{
+				message = "Index value for vertex element '";
+				message += element.name;
+				message += "' is out of range.";
+				logError(message.c_str());
+				return false;
+			}
+
+			VertexValue value;
+			auto offset = static_cast<std::size_t>(indexValue)*stream.vertexFormat.stride();
+			value.fromData(stream.vertexData + offset, element.layout, element.type);
+			value.expandBounds(elementRef.minVal, elementRef.maxVal);
+		}
+	}
+
+	// Create the combined vertex stream.
+	std::vector<std::uint8_t> vertexData(m_vertexFormat.stride());
+	VertexSet vertexSet;
+
+	assert(m_indexData.empty());
+	std::uint32_t lastRestartIndex = std::numeric_limits<std::uint32_t>::max();
+	IndexData* indexData = nullptr;
+	unsigned int sizeofIndex = indexSize(m_indexType);
+	if (m_indexType != IndexType::NoIndices)
+	{
+		m_indexData.push_back(IndexData{nullptr, m_indexType, 0, 0});
+		indexData = &m_indexData.back();
+	}
+
+	unsigned int indexStride = primitiveIndexStride(m_primitiveType, m_patchPoints);
+	for (std::uint32_t i = 0; i < m_indexCount; i += indexStride)
+	{
+		bool restart = false;
+		for (std::uint32_t j = 0; j < m_elementMapping.size(); ++j)
+		{
+			const VertexElementRef& elementRef = m_elementMapping[j];
+			const VertexStream& stream = m_vertexStreams[elementRef.streamIndex];
+			assert(elementRef.element);
+			const VertexElement& element = *elementRef.element;
+			const VertexElement& dstElement = m_vertexFormat[j];
+
+			// Handle primitive restart.
+			std::uint32_t indexValue = getIndexValue(stream.indexType, stream.indexData, i, i);
+			if (indexValue == primitiveRestart)
+			{
+				assert(m_indexType != IndexType::NoIndices);
+				assert(j == 0);
+				restart = true;
+				break;
+			}
+			assert(indexValue < stream.vertexCount);
+
+			// Read the current element.
+			VertexValue value;
+			auto offset = static_cast<std::size_t>(indexValue)*stream.vertexFormat.stride();
+			value.fromData(stream.vertexData + offset, element.layout, element.type);
+
+			// Then write it into the combined vertex.
+			std::uint8_t* elementPtr = vertexData.data() + dstElement.offset;
+			switch (elementRef.transform)
+			{
+				case Transform::Identity:
+					value.toData(elementPtr, dstElement.layout, dstElement.type);
+					break;
+				case Transform::Bounds:
+					value.toData(elementPtr, dstElement.layout, dstElement.type, elementRef.minVal,
+						elementRef.maxVal);
+					break;
+				case Transform::UNormToSNorm:
+					for (unsigned int k = 0; k < VertexValue::count; ++k)
+						value[i] = value[i]*2 - 1.0;
+					value.toData(elementPtr, dstElement.layout, dstElement.type);
+					break;
+				case Transform::SNormToUNorm:
+					for (unsigned int k = 0; k < VertexValue::count; ++k)
+						value[i] = value[i]*0.5 + 0.5;
+					value.toData(elementPtr, dstElement.layout, dstElement.type);
+					break;
+				default:
+					assert(false);
+					break;
+			}
+		}
+
+		if (restart)
+		{
+			addIndex(m_indices, m_indexType, sizeofIndex, primitiveRestartIndexValue(m_indexType));
+			lastRestartIndex = static_cast<std::uint32_t>(m_indices.size()/sizeofIndex);
+			continue;
+		}
+
+		// Check if there's room for a new primitive.
+		if (m_indexType != IndexType::NoIndices &&
+			m_vertices.size()/vertexData.size() + indexStride - indexData->baseVertex >
+				m_maxIndexValue)
+		{
+			auto baseVertex =
+				static_cast<std::int32_t>(m_vertices.size()/vertexData.size());
+			m_indexData.push_back(IndexData{reinterpret_cast<void*>(m_indices.size()),
+				m_indexType, 0, baseVertex});
+			indexData = &m_indexData.back();
+			vertexSet.clear();
+
+			// Copy any vertices that are needed.
+			assert(m_indexData.size() >= 2);
+			IndexData& lastIndexData = m_indexData[m_indexData.size() - 2];
+			auto indexCount = static_cast<std::uint32_t>(m_indices.size()/sizeofIndex);
+			copyConnectedVertices(m_vertices, vertexData.size(), vertexSet, m_indices,
+				m_indexType, sizeofIndex, baseVertex, m_primitiveType, lastRestartIndex,
+				lastIndexData.count, lastIndexData.baseVertex);
+			// Count this as a the first index after a primitive restart.
+			lastRestartIndex = indexCount - 1;
+		}
+
+		// Add the vertex and index once all the data has been added.
+		if (m_indexType == IndexType::NoIndices)
+			m_vertices.insert(m_vertices.end(), vertexData.begin(), vertexData.end());
+		else
+		{
+			assert(indexData);
+			std::uint32_t index = addVertex(m_vertices, vertexData, vertexSet);
+			std::uint32_t indexValue = index - indexData->baseVertex;
+			assert(indexValue <= m_maxIndexValue);
+			addIndex(m_indices, m_indexType, sizeofIndex, indexValue);
+			++indexData->count;
+		}
+	}
+
+	// Set the pointers for the index data.
+	for (IndexData& indexData : m_indexData)
+		indexData.data = m_indices.data() + reinterpret_cast<std::size_t>(indexData.data);
+
+	return true;
 }
 
 } // namespace vfc

@@ -69,16 +69,30 @@ struct IndexData
 };
 
 /**
+ * @brief Gets the size of the index type.
+ * @param type The type of the index.
+ * @return The size of the index in bytes.
+ */
+inline constexpr unsigned int indexSize(IndexType type)
+{
+	// Need to have a single return statement to satisfy constexpr.
+	return static_cast<unsigned int>(type == IndexType::UInt16 ? sizeof(std::uint16_t) :
+		(type == IndexType::UInt32 ? sizeof(std::uint32_t) : 0));
+}
+
+/**
  * @brief Gets the value of an index.
  * @param type The type of the index data.
  * @param data The index data.
  * @param i The index to access.
+ * @param defaultValue The default value when no index is present.
  * @return The index value, or std::numeric_limits<std::uint32_t>::max() if parameters are invalid.
  */
-inline std::uint32_t getIndexValue(IndexType type, const void* data, std::uint32_t i)
+inline std::uint32_t getIndexValue(IndexType type, const void* data, std::size_t i,
+	std::uint32_t defaultValue = std::numeric_limits<std::uint32_t>::max())
 {
 	if (!data)
-		return std::numeric_limits<std::uint32_t>::max();
+		return defaultValue;
 
 	switch (type)
 	{
@@ -87,7 +101,7 @@ inline std::uint32_t getIndexValue(IndexType type, const void* data, std::uint32
 		case IndexType::UInt32:
 			return reinterpret_cast<const std::uint32_t*>(data)[i];
 		default:
-			return std::numeric_limits<std::uint32_t>::max();
+			return defaultValue;
 	}
 }
 
@@ -99,7 +113,7 @@ inline std::uint32_t getIndexValue(IndexType type, const void* data, std::uint32
  * @param value The index value to set. This may be truncated.
  * @return False if the type or data are invalid.
  */
-inline bool setIndexValue(IndexType type, void* data, std::uint32_t i, std::uint32_t value)
+inline bool setIndexValue(IndexType type, void* data, std::size_t i, std::uint32_t value)
 {
 	if (!data)
 		return false;
@@ -132,12 +146,14 @@ inline constexpr std::uint32_t maxIndexValue(IndexType type)
 
 /**
  * @brief Gets the primitive restart value of an index.
+ * @param type The type of the index.
+ * @return The value for a primitive restart.
  */
 inline constexpr std::uint32_t primitiveRestartIndexValue(IndexType type)
 {
 	// Need to have a single return statement to satisfy constexpr.
 	return type == IndexType::UInt16 ? std::numeric_limits<std::uint16_t>::max() :
-		(type == IndexType::UInt32 ? std::numeric_limits<std::uint32_t>::max() : 0);
+		std::numeric_limits<std::uint32_t>::max();
 }
 
 } // namespace vfc
