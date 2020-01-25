@@ -597,4 +597,15 @@ bool Converter::convert()
 	return true;
 }
 
+bool Converter::getVertexElementBounds(VertexValue& outMin, VertexValue& outMax,
+	const char* name) const
+{
+	auto it = m_vertexFormat.find(name);
+	if (it == m_vertexFormat.end())
+		return false;
+
+	getVertexElementBounds(outMin, outMax, it - m_vertexFormat.begin());
+	return true;
+}
+
 } // namespace vfc

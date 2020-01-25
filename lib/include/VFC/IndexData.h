@@ -46,7 +46,7 @@ struct IndexData
 	/**
 	 * @brief The data for the indices.
 	 */
-	void* data;
+	const void* data;
 
 	/**
 	 * @brief The type of the index data.

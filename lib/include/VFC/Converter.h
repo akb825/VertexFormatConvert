@@ -250,6 +250,69 @@ public:
 	 */
 	bool convert();
 
+	/**
+	 * @brief Gets the converted indices.
+	 * @return The index data. More than one buffer will be returned if multiple base vertex values
+	 *     are required.
+	 */
+	const std::vector<IndexData>& getIndices() const
+	{
+		return m_indexData;
+	}
+
+	/**
+	 * @brief Gets the bounds for a vertex element.
+	 * @param[out] outMin The minimum value for the bounds.
+	 * @param[out] outMax The maximum value for the bounds.
+	 * @param i The index of the vertex element.
+	 */
+	void getVertexElementBounds(VertexValue& outMin, VertexValue& outMax, std::size_t i) const
+	{
+		assert(i < m_elementMapping.size());
+		outMin = m_elementMapping[i].minVal;
+		outMax = m_elementMapping[i].maxVal;
+	}
+
+	/**
+	 * @brief Gets the bounds for a vertex element.
+	 * @param[out] outMin The minimum value for the bounds.
+	 * @param[out] outMax The maximum value for the bounds.
+	 * @param name The name of the vertex element.
+	 * @return False if the element wasn't found.
+	 */
+	bool getVertexElementBounds(VertexValue& outMin, VertexValue& outMax, const char* name) const;
+
+	/**
+	 * @brief Gets the bounds for a vertex element.
+	 * @param[out] outMin The minimum value for the bounds.
+	 * @param[out] outMax The maximum value for the bounds.
+	 * @param name The name of the vertex element.
+	 * @return False if the element wasn't found.
+	 */
+	bool getVertexElementBounds(VertexValue& outMin, VertexValue& outMax,
+		const std::string& name) const
+	{
+		return getVertexElementBounds(outMin, outMax, name.c_str());
+	}
+
+	/**
+	 * @brief Gets the converted vertices.
+	 * @return The vertices as an array of bytes.
+	 */
+	const std::vector<std::uint8_t>& getVertices() const
+	{
+		return m_vertices;
+	}
+
+	/**
+	 * @brief Gets the number of converted vertices.
+	 * @return The number of vertices.
+	 */
+	std::uint32_t getVertexCount() const
+	{
+		return static_cast<std::uint32_t>(m_vertices.size()/m_vertexFormat.stride());
+	}
+
 private:
 	void logError(const char* message) const;
 
