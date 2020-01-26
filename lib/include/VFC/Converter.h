@@ -262,6 +262,9 @@ public:
 
 	/**
 	 * @brief Gets the bounds for a vertex element.
+	 *
+	 * The bounds are based on the input values before any transforms are applied.
+	 *
 	 * @param[out] outMin The minimum value for the bounds.
 	 * @param[out] outMax The maximum value for the bounds.
 	 * @param i The index of the vertex element.
@@ -275,6 +278,9 @@ public:
 
 	/**
 	 * @brief Gets the bounds for a vertex element.
+	 *
+	 * The bounds are based on the input values before any transforms are applied.
+	 *
 	 * @param[out] outMin The minimum value for the bounds.
 	 * @param[out] outMax The maximum value for the bounds.
 	 * @param name The name of the vertex element.
@@ -284,6 +290,9 @@ public:
 
 	/**
 	 * @brief Gets the bounds for a vertex element.
+	 *
+	 * The bounds are based on the input values before any transforms are applied.
+	 *
 	 * @param[out] outMin The minimum value for the bounds.
 	 * @param[out] outMax The maximum value for the bounds.
 	 * @param name The name of the vertex element.

@@ -153,8 +153,7 @@ struct VertexHash
 {
 	std::size_t operator()(const VertexRef& vertex) const
 	{
-		auto offset = static_cast<std::size_t>(vertex.index)*vertex.size;
-		return murmurHash2(vertex.data->data() + offset, vertex.size);
+		return murmurHash2(vertex.data->data() + vertex.offset, vertex.size);
 	}
 };
 
@@ -167,7 +166,8 @@ std::uint32_t addVertex(std::vector<std::uint8_t>& vertices, const std::uint8_t*
 	auto size = static_cast<std::uint32_t>(vertexSize);
 
 	// Expected that almost always adding a new vertex, so optimize for that.
-	auto index = static_cast<std::uint32_t>(vertices.size()/size);
+	std::size_t prevBufferSize = vertices.size();
+	auto index = static_cast<std::uint32_t>(prevBufferSize/size);
 	vertices.insert(vertices.end(), vertex, vertex + vertexSize);
 	VertexRef ref(vertices, index, size);
 	auto insertPair = vertexSet.insert(ref);
@@ -175,7 +175,7 @@ std::uint32_t addVertex(std::vector<std::uint8_t>& vertices, const std::uint8_t*
 	{
 		assert(insertPair.first->index < ref.index);
 		// Remove the added vertex data.
-		vertices.resize(index);
+		vertices.resize(prevBufferSize);
 		return insertPair.first->index;
 	}
 
@@ -194,6 +194,20 @@ void addIndex(std::vector<std::uint8_t>& indices, IndexType type, unsigned int s
 	std::size_t nextIndex = indices.size()/sizeofIndex;
 	indices.resize(indices.size() + sizeofIndex);
 	setIndexValue(type, indices.data(), nextIndex, value);
+}
+
+bool isPrimitiveRestart(std::uint32_t index, std::uint32_t primitiveRestart,
+	PrimitiveType primitiveType)
+{
+	switch (primitiveType)
+	{
+		case PrimitiveType::LineStrip:
+		case PrimitiveType::TriangleStrip:
+		case PrimitiveType::TriangleFan:
+			return index == primitiveRestart;
+		default:
+			return false;
+	}
 }
 
 unsigned int primitiveIndexStride(PrimitiveType type, unsigned int patchPoints)
@@ -373,11 +387,12 @@ bool Converter::addVertexStream(VertexFormat vertexFormat, const void* vertexDat
 	auto streamIndex = static_cast<std::uint32_t>(m_vertexStreams.size());
 	for (std::size_t i = 0; i < m_vertexFormat.size(); ++i)
 	{
-		if (vertexFormat.find(m_vertexFormat[i].name) == vertexFormat.end())
+		auto it = vertexFormat.find(m_vertexFormat[i].name);
+		if (it == vertexFormat.end())
 			continue;
 
 		m_elementMapping[i].streamIndex = streamIndex;
-		m_elementMapping[i].element = &vertexFormat[i];
+		m_elementMapping[i].element = &*it;
 	}
 
 	m_vertexStreams.push_back(VertexStream{reinterpret_cast<const std::uint8_t*>(vertexData),
@@ -451,7 +466,7 @@ bool Converter::convert()
 		for (std::uint32_t i = 0; i < m_indexCount; ++i)
 		{
 			std::uint32_t indexValue = getIndexValue(stream.indexType, stream.indexData, i, i);
-			if (indexValue == primitiveRestart)
+			if (isPrimitiveRestart(indexValue, primitiveRestart, m_primitiveType))
 			{
 				if (m_indexType == IndexType::NoIndices)
 				{
@@ -494,65 +509,6 @@ bool Converter::convert()
 	unsigned int indexStride = primitiveIndexStride(m_primitiveType, m_patchPoints);
 	for (std::uint32_t i = 0; i < m_indexCount; i += indexStride)
 	{
-		bool restart = false;
-		for (std::uint32_t j = 0; j < m_elementMapping.size(); ++j)
-		{
-			const VertexElementRef& elementRef = m_elementMapping[j];
-			const VertexStream& stream = m_vertexStreams[elementRef.streamIndex];
-			assert(elementRef.element);
-			const VertexElement& element = *elementRef.element;
-			const VertexElement& dstElement = m_vertexFormat[j];
-
-			// Handle primitive restart.
-			std::uint32_t indexValue = getIndexValue(stream.indexType, stream.indexData, i, i);
-			if (indexValue == primitiveRestart)
-			{
-				assert(m_indexType != IndexType::NoIndices);
-				assert(j == 0);
-				restart = true;
-				break;
-			}
-			assert(indexValue < stream.vertexCount);
-
-			// Read the current element.
-			VertexValue value;
-			auto offset = static_cast<std::size_t>(indexValue)*stream.vertexFormat.stride();
-			value.fromData(stream.vertexData + offset, element.layout, element.type);
-
-			// Then write it into the combined vertex.
-			std::uint8_t* elementPtr = vertexData.data() + dstElement.offset;
-			switch (elementRef.transform)
-			{
-				case Transform::Identity:
-					value.toData(elementPtr, dstElement.layout, dstElement.type);
-					break;
-				case Transform::Bounds:
-					value.toData(elementPtr, dstElement.layout, dstElement.type, elementRef.minVal,
-						elementRef.maxVal);
-					break;
-				case Transform::UNormToSNorm:
-					for (unsigned int k = 0; k < VertexValue::count; ++k)
-						value[i] = value[i]*2 - 1.0;
-					value.toData(elementPtr, dstElement.layout, dstElement.type);
-					break;
-				case Transform::SNormToUNorm:
-					for (unsigned int k = 0; k < VertexValue::count; ++k)
-						value[i] = value[i]*0.5 + 0.5;
-					value.toData(elementPtr, dstElement.layout, dstElement.type);
-					break;
-				default:
-					assert(false);
-					break;
-			}
-		}
-
-		if (restart)
-		{
-			addIndex(m_indices, m_indexType, sizeofIndex, primitiveRestartIndexValue(m_indexType));
-			lastRestartIndex = static_cast<std::uint32_t>(m_indices.size()/sizeofIndex);
-			continue;
-		}
-
 		// Check if there's room for a new primitive.
 		if (m_indexType != IndexType::NoIndices &&
 			m_vertices.size()/vertexData.size() + indexStride - indexData->baseVertex >
@@ -576,17 +532,83 @@ bool Converter::convert()
 			lastRestartIndex = indexCount - 1;
 		}
 
-		// Add the vertex and index once all the data has been added.
-		if (m_indexType == IndexType::NoIndices)
-			m_vertices.insert(m_vertices.end(), vertexData.begin(), vertexData.end());
-		else
+		for (std::uint32_t j = 0; j < indexStride; ++j)
 		{
-			assert(indexData);
-			std::uint32_t index = addVertex(m_vertices, vertexData, vertexSet);
-			std::uint32_t indexValue = index - indexData->baseVertex;
-			assert(indexValue <= m_maxIndexValue);
-			addIndex(m_indices, m_indexType, sizeofIndex, indexValue);
-			++indexData->count;
+			std::uint32_t index = i + j;
+			bool restart = false;
+			for (std::uint32_t k = 0; k < m_elementMapping.size(); ++k)
+			{
+				const VertexElementRef& elementRef = m_elementMapping[k];
+				const VertexStream& stream = m_vertexStreams[elementRef.streamIndex];
+				assert(elementRef.element);
+				const VertexElement& element = *elementRef.element;
+				const VertexElement& dstElement = m_vertexFormat[k];
+
+				// Handle primitive restart.
+				std::uint32_t indexValue =
+					getIndexValue(stream.indexType, stream.indexData, index, index);
+				if (isPrimitiveRestart(indexValue, primitiveRestart, m_primitiveType))
+				{
+					assert(m_indexType != IndexType::NoIndices);
+					restart = true;
+					break;
+				}
+				assert(indexValue < stream.vertexCount);
+
+				// Read the current element.
+				VertexValue value;
+				auto offset = static_cast<std::size_t>(indexValue)*stream.vertexFormat.stride() +
+					element.offset;
+				value.fromData(stream.vertexData + offset, element.layout, element.type);
+
+				// Then write it into the combined vertex.
+				std::uint8_t* elementPtr = vertexData.data() + dstElement.offset;
+				switch (elementRef.transform)
+				{
+					case Transform::Identity:
+						value.toData(elementPtr, dstElement.layout, dstElement.type);
+						break;
+					case Transform::Bounds:
+						value.toData(elementPtr, dstElement.layout, dstElement.type,
+							elementRef.minVal, elementRef.maxVal);
+						break;
+					case Transform::UNormToSNorm:
+						for (unsigned int l = 0; l < VertexValue::count; ++l)
+							value[l] = value[l]*2 - 1.0;
+						value.toData(elementPtr, dstElement.layout, dstElement.type);
+						break;
+					case Transform::SNormToUNorm:
+						for (unsigned int l = 0; l < VertexValue::count; ++l)
+							value[l] = value[l]*0.5 + 0.5;
+						value.toData(elementPtr, dstElement.layout, dstElement.type);
+						break;
+					default:
+						assert(false);
+						break;
+				}
+			}
+
+			if (restart)
+			{
+				assert(indexStride == 1);
+				addIndex(m_indices, m_indexType, sizeofIndex, primitiveRestartIndexValue(m_indexType));
+				++indexData->count;
+				lastRestartIndex = static_cast<std::uint32_t>(m_indices.size()/sizeofIndex);
+				break; // Continues outer loop.
+			}
+
+			// Add the vertex and index once all the data has been added.
+			if (m_indexType == IndexType::NoIndices)
+				m_vertices.insert(m_vertices.end(), vertexData.begin(), vertexData.end());
+			else
+			{
+				assert(indexData);
+				std::uint32_t vertexIndex = addVertex(m_vertices, vertexData, vertexSet);
+				std::uint32_t indexValue = vertexIndex - indexData->baseVertex;
+				assert(indexValue <= m_maxIndexValue);
+				addIndex(m_indices, m_indexType, sizeofIndex, indexValue);
+				++indexData->count;
+			}
 		}
 	}
 
