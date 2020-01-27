@@ -31,7 +31,8 @@ enum class ElementType : std::int8_t;
 /**
  * @brief Class that contains the value of a vertex, which can be converted between formats.
  *
- * This contains
+ * This contains the value represented as four doubles as an intermediate storage value. The default
+ * value is (0, 0, 0, 1), and any components not present during decoding will use the default value.
  */
 class VFC_EXPORT VertexValue
 {

@@ -104,14 +104,32 @@ public:
 	 * @brief Move constructor.
 	 * @param other The other instance to move.
 	 */
-	Converter(Converter&& other) noexcept = default;
+	Converter(Converter&& other) = default;
 
 	/**
 	 * @brief Move assignment.
 	 * @param other The other instance to move.
 	 * @return A reference to this.
 	 */
-	Converter& operator=(Converter&& other) noexcept = default;
+	Converter& operator=(Converter&& other) = default;
+
+	/**
+	 * @brief Returns whether or not the converter is valid.
+	 * @return True if the format is valid.
+	 */
+	bool isValid() const
+	{
+		return !m_vertexFormat.empty();
+	}
+
+	/**
+	* @brief Returns whether or not the converter is valid.
+	* @return True if the format is valid.
+	*/
+	explicit operator bool() const
+	{
+		return isValid();
+	}
 
 	/**
 	 * @brief Gets the vertex format to convert to.

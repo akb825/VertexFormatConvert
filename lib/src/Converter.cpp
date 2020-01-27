@@ -210,6 +210,26 @@ bool isPrimitiveRestart(std::uint32_t index, std::uint32_t primitiveRestart,
 	}
 }
 
+unsigned int primitiveMinIndexCount(PrimitiveType type, unsigned int patchPoints)
+{
+	switch (type)
+	{
+		case PrimitiveType::PointList:
+			return 1;
+		case PrimitiveType::LineList:
+		case PrimitiveType::LineStrip:
+			return 2;
+		case PrimitiveType::TriangleList:
+		case PrimitiveType::TriangleStrip:
+		case PrimitiveType::TriangleFan:
+			return 3;
+		case PrimitiveType::PatchList:
+			return std::max(patchPoints, 1U);
+		default:
+			return 1;
+	}
+}
+
 unsigned int primitiveIndexStride(PrimitiveType type, unsigned int patchPoints)
 {
 	switch (type)
@@ -350,11 +370,42 @@ Converter::Converter(VertexFormat vertexFormat, IndexType indexType, PrimitiveTy
 		VertexValue::initialBoundsMin, VertexValue::initialBoundsMax})
 	, m_indexCount(0)
 {
-	assert(!m_vertexFormat.empty());
-	assert(m_primitiveType != PrimitiveType::Invalid);
-	assert(m_primitiveType != PrimitiveType::PatchList || m_patchPoints > 0);
-	assert(indexType == IndexType::NoIndices ||
-		m_maxIndexValue <= primitiveRestartIndexValue(indexType));
+	bool error = false;
+	if (m_vertexFormat.empty())
+	{
+		logError("Converter vertex format is empty.");
+		error = true;
+	}
+
+	if (m_primitiveType == PrimitiveType::Invalid)
+	{
+		logError("Converter primitive type is invalid.");
+		error = true;
+	}
+
+	if (m_primitiveType == PrimitiveType::PatchList && m_patchPoints == 0)
+	{
+		logError(
+			"Patch point count must be provided to Converter when using PatchList primitives.");
+		error = true;
+	}
+
+	if (indexType != IndexType::NoIndices)
+	{
+		if (m_maxIndexValue < primitiveMinIndexCount(primitiveType, patchPoints) - 1)
+		{
+			logError("Max index value is too small to hold any primitives.");
+			error = true;
+		}
+		else if (m_maxIndexValue > primitiveRestartIndexValue(indexType))
+		{
+			logError("Max index value is higher than the maximum for the type.");
+			error = true;
+		}
+	}
+
+	if (error)
+		m_vertexFormat.clear();
 }
 
 bool Converter::addVertexStream(VertexFormat vertexFormat, const void* vertexData,
@@ -455,7 +506,7 @@ void Converter::logError(const char* message) const
 
 bool Converter::convert()
 {
-	if (m_vertexFormat.empty())
+	if (!isValid())
 	{
 		logError("Converter is invalid.");
 		return false;

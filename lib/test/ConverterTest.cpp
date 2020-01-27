@@ -16,6 +16,7 @@
 
 #include <VFC/Converter.h>
 #include <gtest/gtest.h>
+#include <utility>
 
 #if VFC_GCC
 #pragma GCC diagnostic push
@@ -262,10 +263,10 @@ TEST(ConverterTest, QuadRemapIndices)
 		1.0f, 1.0f,
 		0.0f, 1.0f,
 		1.0f, 0.0f,
-		0.0f, 0.0f,
+		0.0f, 0.0f
 	};
 
-	std::uint32_t texCoordIndices[] = {3, 2, 1, 1, 2, 0};
+	std::uint16_t texCoordIndices[] = {3, 2, 1, 1, 2, 0};
 
 	vfc::VertexFormat texCoordFormat;
 	texCoordFormat.appendElement("texCoords", vfc::ElementLayout::X32Y32, vfc::ElementType::Float);
@@ -279,7 +280,7 @@ TEST(ConverterTest, QuadRemapIndices)
 	ASSERT_TRUE(converter.addVertexStream(std::move(positionFormat), positions, 4,
 		vfc::IndexType::UInt32, positionIndices, 6));
 	ASSERT_TRUE(converter.addVertexStream(std::move(texCoordFormat), texCoords, 4,
-		vfc::IndexType::UInt32, texCoordIndices, 6));
+		vfc::IndexType::UInt16, texCoordIndices, 6));
 	ASSERT_TRUE(converter.convert());
 
 	const std::vector<vfc::IndexData>& indices = converter.getIndices();
@@ -1945,6 +1946,89 @@ TEST(ConverterTest, PatchListWithMaxIndexValue)
 	EXPECT_TRUE(converter.getVertexElementBounds(minBounds, maxBounds, "texCoords"));
 	EXPECT_EQ(vfc::VertexValue(0.0, 0.0), minBounds);
 	EXPECT_EQ(vfc::VertexValue(1.0, 1.0), maxBounds);
+}
+
+TEST(ConverterTest, ConstructorErrors)
+{
+	{
+		std::vector<std::string> errors;
+		vfc::Converter converter(vfc::VertexFormat(), vfc::IndexType::UInt16,
+			vfc::PrimitiveType::Invalid, 0,
+			[&errors](const char* message) {errors.push_back(message);});
+
+		std::vector<std::string> expectedErrors =
+		{
+			"Converter vertex format is empty.",
+			"Converter primitive type is invalid.",
+		};
+		EXPECT_FALSE(converter.isValid());
+		EXPECT_EQ(expectedErrors, errors);
+	}
+
+	vfc::VertexFormat vertexFormat;
+	vertexFormat.appendElement("positions", vfc::ElementLayout::X16Y16, vfc::ElementType::Float);
+	vertexFormat.appendElement("texCoords", vfc::ElementLayout::X16Y16, vfc::ElementType::UNorm);
+	{
+		std::vector<std::string> errors;
+		vfc::Converter converter(vertexFormat, vfc::IndexType::UInt16,
+			vfc::PrimitiveType::PatchList, 0,
+			[&errors](const char* message) {errors.push_back(message);});
+
+		std::vector<std::string> expectedErrors =
+		{
+			"Patch point count must be provided to Converter when using PatchList primitives.",
+		};
+		EXPECT_FALSE(converter.isValid());
+		EXPECT_EQ(expectedErrors, errors);
+	}
+
+	{
+		std::vector<std::pair<vfc::PrimitiveType, std::uint32_t>> primitiveIndexCounts =
+		{
+			{vfc::PrimitiveType::LineList, 2},
+			{vfc::PrimitiveType::LineStrip, 2},
+			{vfc::PrimitiveType::TriangleList, 3},
+			{vfc::PrimitiveType::TriangleStrip, 3},
+			{vfc::PrimitiveType::TriangleFan, 3},
+			{vfc::PrimitiveType::PatchList, 4}
+		};
+
+		for (const auto& primitiveIndexCount : primitiveIndexCounts)
+		{
+			std::vector<std::string> errors;
+			vfc::Converter converter(vertexFormat, vfc::IndexType::UInt16,
+				primitiveIndexCount.first, 4, primitiveIndexCount.second - 2,
+				[&errors](const char* message) {errors.push_back(message);});
+
+			std::vector<std::string> expectedErrors =
+			{
+				"Max index value is too small to hold any primitives."
+			};
+			EXPECT_FALSE(converter.isValid());
+			EXPECT_EQ(expectedErrors, errors);
+
+			errors.clear();
+			converter = vfc::Converter(vertexFormat, vfc::IndexType::UInt16,
+				primitiveIndexCount.first, 4, primitiveIndexCount.second - 1,
+				[&errors](const char* message) {errors.push_back(message);});
+			EXPECT_TRUE(converter.isValid());
+			EXPECT_TRUE(errors.empty());
+		}
+	}
+
+	{
+		std::vector<std::string> errors;
+		vfc::Converter converter(vertexFormat, vfc::IndexType::UInt16,
+			vfc::PrimitiveType::TriangleList, 0, 0xFFFFFFFF,
+			[&errors](const char* message) {errors.push_back(message);});
+
+		std::vector<std::string> expectedErrors =
+		{
+			"Max index value is higher than the maximum for the type.",
+		};
+		EXPECT_FALSE(converter.isValid());
+		EXPECT_EQ(expectedErrors, errors);
+	}
 }
 
 TEST(ConverterTest, BadVertexCount)

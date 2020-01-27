@@ -1185,7 +1185,8 @@ bool VertexValue::toData(void* outData, ElementLayout layout, ElementType type) 
 			if (type == ElementType::Float)
 			{
 				std::uint32_t outDataValue =
-					glm::packF2x11_1x10(glm::vec3(m_values[0], m_values[1], m_values[2]));
+					glm::packF2x11_1x10(glm::vec3(std::max(m_values[0], 0.0),
+						std::max(m_values[1], 0.0), std::max(m_values[2], 0.0)));
 				std::memcpy(reinterpret_cast<std::uint32_t*>(outData), &outDataValue,
 					sizeof(std::uint32_t));
 				return true;
@@ -1196,7 +1197,8 @@ bool VertexValue::toData(void* outData, ElementLayout layout, ElementType type) 
 			if (type == ElementType::Float)
 			{
 				std::uint32_t outDataValue =
-					glm::packF3x9_E1x5(glm::vec3(m_values[0], m_values[1], m_values[2]));
+					glm::packF3x9_E1x5(glm::vec3(std::max(m_values[0], 0.0),
+						std::max(m_values[1], 0.0), std::max(m_values[2], 0.0)));
 				std::memcpy(reinterpret_cast<std::uint32_t*>(outData), &outDataValue,
 					sizeof(std::uint32_t));
 				return true;
