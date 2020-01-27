@@ -247,7 +247,8 @@ void copyVertex(std::vector<std::uint8_t>& vertices, std::size_t vertexSize, Ver
 void copyConnectedVertices(std::vector<std::uint8_t>& vertices, std::size_t vertexSize,
 	VertexSet& vertexSet, std::vector<std::uint8_t>& indices, IndexType indexType,
 	unsigned int sizeofIndex, std::int32_t baseVertex, PrimitiveType primitiveType,
-	std::uint32_t lastRestartIndex, std::uint32_t& prevIndexCount, std::int32_t prevBaseVertex)
+	std::uint32_t lastRestartIndex, std::uint32_t& prevIndexCount, std::int32_t prevBaseVertex,
+	std::uint32_t& curIndexCount)
 {
 	assert(static_cast<std::size_t>(baseVertex) == vertices.size()/vertexSize);
 	auto indexCount = static_cast<std::uint32_t>(indices.size()/sizeofIndex);
@@ -258,16 +259,41 @@ void copyConnectedVertices(std::vector<std::uint8_t>& vertices, std::size_t vert
 			{
 				copyVertex(vertices, vertexSize, vertexSet, indices, indexType, sizeofIndex,
 					baseVertex, indexCount - 1, prevBaseVertex);
+				++curIndexCount;
 			}
 			break;
 		case PrimitiveType::TriangleStrip:
 		{
-			std::uint32_t copyBegin =
-				std::max(lastRestartIndex + 1, indexCount - 2);
-			for (std::uint32_t k = copyBegin; k < indexCount; ++k)
+			std::uint32_t firstIndex = lastRestartIndex + 1;
+			std::uint32_t stripIndexCount = indexCount - firstIndex + 1;
+			if (stripIndexCount <= 2)
 			{
-				copyVertex(vertices, vertexSize, vertexSet, indices, indexType, sizeofIndex,
-					baseVertex, k, prevBaseVertex);
+				for (std::uint32_t k = firstIndex; k < indexCount; ++k)
+				{
+					copyVertex(vertices, vertexSize, vertexSet, indices, indexType, sizeofIndex,
+						baseVertex, k, prevBaseVertex);
+					++curIndexCount;
+				}
+			}
+			else
+			{
+				// Reverse every other primitive.
+				std::uint32_t primitiveCount = stripIndexCount - 2;
+				if (primitiveCount & 1)
+				{
+					copyVertex(vertices, vertexSize, vertexSet, indices, indexType, sizeofIndex,
+						baseVertex, indexCount - 1, prevBaseVertex);
+					copyVertex(vertices, vertexSize, vertexSet, indices, indexType, sizeofIndex,
+						baseVertex, indexCount - 2, prevBaseVertex);
+				}
+				else
+				{
+					copyVertex(vertices, vertexSize, vertexSet, indices, indexType, sizeofIndex,
+						baseVertex, indexCount - 2, prevBaseVertex);
+					copyVertex(vertices, vertexSize, vertexSet, indices, indexType, sizeofIndex,
+						baseVertex, indexCount - 1, prevBaseVertex);
+				}
+				curIndexCount += 2;
 			}
 			break;
 		}
@@ -277,11 +303,13 @@ void copyConnectedVertices(std::vector<std::uint8_t>& vertices, std::size_t vert
 				// First vertex in the fan.
 				copyVertex(vertices, vertexSize, vertexSet, indices, indexType, sizeofIndex,
 					baseVertex, lastRestartIndex + 1, prevBaseVertex);
+				++curIndexCount;
 				if (lastRestartIndex != indexCount - 2)
 				{
 					// Last point to continue for the triangle.
 					copyVertex(vertices, vertexSize, vertexSet, indices, indexType, sizeofIndex,
-						baseVertex, indexCount - 1,prevBaseVertex);
+						baseVertex, indexCount - 1, prevBaseVertex);
+					++curIndexCount;
 				}
 			}
 			break;
@@ -291,9 +319,9 @@ void copyConnectedVertices(std::vector<std::uint8_t>& vertices, std::size_t vert
 
 	// If we had to copy all of the vertices since the last restart, there wasn't a full primitive
 	// and the number of indices for the last index buffer must be reduced.
-	auto addedVertices = static_cast<std::uint32_t>(vertices.size()/vertexSize) - baseVertex;
-	if (lastRestartIndex + 1 == baseVertex - addedVertices)
-		prevIndexCount -= addedVertices;
+	auto addedIndices = static_cast<std::uint32_t>(indices.size()/sizeofIndex) - indexCount;
+	if (lastRestartIndex + 1 == indexCount - addedIndices)
+		prevIndexCount -= addedIndices;
 }
 
 } // namespace
@@ -457,12 +485,12 @@ bool Converter::convert()
 		return false;
 
 	// First need to gather the bounds. Loop over the streams first for better cache efficiency.
-	std::uint32_t primitiveRestart = primitiveRestartIndexValue(m_indexType);
 	for (VertexElementRef& elementRef : m_elementMapping)
 	{
 		const VertexStream& stream = m_vertexStreams[elementRef.streamIndex];
 		assert(elementRef.element);
 		const VertexElement& element = *elementRef.element;
+		std::uint32_t primitiveRestart = primitiveRestartIndexValue(stream.indexType);
 		for (std::uint32_t i = 0; i < m_indexCount; ++i)
 		{
 			std::uint32_t indexValue = getIndexValue(stream.indexType, stream.indexData, i, i);
@@ -510,9 +538,9 @@ bool Converter::convert()
 	for (std::uint32_t i = 0; i < m_indexCount; i += indexStride)
 	{
 		// Check if there's room for a new primitive.
+		auto vertexCount = static_cast<std::uint32_t>(m_vertices.size()/vertexData.size());
 		if (m_indexType != IndexType::NoIndices &&
-			m_vertices.size()/vertexData.size() + indexStride - indexData->baseVertex >
-				m_maxIndexValue)
+			vertexCount + indexStride - 1 - indexData->baseVertex > m_maxIndexValue)
 		{
 			auto baseVertex =
 				static_cast<std::int32_t>(m_vertices.size()/vertexData.size());
@@ -527,7 +555,7 @@ bool Converter::convert()
 			auto indexCount = static_cast<std::uint32_t>(m_indices.size()/sizeofIndex);
 			copyConnectedVertices(m_vertices, vertexData.size(), vertexSet, m_indices,
 				m_indexType, sizeofIndex, baseVertex, m_primitiveType, lastRestartIndex,
-				lastIndexData.count, lastIndexData.baseVertex);
+				lastIndexData.count, lastIndexData.baseVertex, indexData->count);
 			// Count this as a the first index after a primitive restart.
 			lastRestartIndex = indexCount - 1;
 		}
@@ -547,6 +575,7 @@ bool Converter::convert()
 				// Handle primitive restart.
 				std::uint32_t indexValue =
 					getIndexValue(stream.indexType, stream.indexData, index, index);
+				std::uint32_t primitiveRestart = primitiveRestartIndexValue(stream.indexType);
 				if (isPrimitiveRestart(indexValue, primitiveRestart, m_primitiveType))
 				{
 					assert(m_indexType != IndexType::NoIndices);
@@ -591,9 +620,11 @@ bool Converter::convert()
 			if (restart)
 			{
 				assert(indexStride == 1);
-				addIndex(m_indices, m_indexType, sizeofIndex, primitiveRestartIndexValue(m_indexType));
-				++indexData->count;
+				assert(m_indexType != IndexType::NoIndices);
 				lastRestartIndex = static_cast<std::uint32_t>(m_indices.size()/sizeofIndex);
+				addIndex(m_indices, m_indexType, sizeofIndex,
+					primitiveRestartIndexValue(m_indexType));
+				++indexData->count;
 				break; // Continues outer loop.
 			}
 
