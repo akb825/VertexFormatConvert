@@ -31,7 +31,7 @@ namespace vfc
 /**
  * @brief Converter for vertex and index data.
  *
- * This class takes multiple vertex streams as index, optionally with index values, and converts
+ * This class takes multiple vertex streams as inputs, optionally with index values, and converts
  * them into a single vertex stream.
  */
 class VFC_EXPORT Converter
