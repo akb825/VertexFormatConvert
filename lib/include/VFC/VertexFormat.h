@@ -497,7 +497,7 @@ public:
 	 */
 	bool operator==(const VertexFormat& other) const
 	{
-		return m_elements == other.m_elements;
+		return m_elements == other.m_elements && m_stride == other.m_stride;
 	}
 
 	/**

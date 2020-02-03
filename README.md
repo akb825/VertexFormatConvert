@@ -15,7 +15,8 @@ Example uses include:
 The following software is required to build VFC:
 
 * [CMake](https://cmake.org/) 3.1 or later
-* [GLM](https://glm.g-truc.net/0.9.8/index.html) (required, included as a submodule)
+* [GLM](https://glm.g-truc.net/) (required, included as a submodule)
+* [RapidJSON](https://rapidjson.org/) (required for tool, included as a submodule)
 * [doxygen](http://www.stack.nl/~dimitri/doxygen/) (optional)
 * [gtest](https://github.com/google/googletest) (optional)
 
