@@ -123,3 +123,808 @@ TEST(ConfigFileTest, InvalidJson)
 	};
 	EXPECT_EQ(expectedMessages, messages);
 }
+
+TEST(ConfigFileTest, InvalidVertexFormat)
+{
+	const char* json = "{}";
+
+	std::vector<std::string> messages;
+	ConfigFile configFile;
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	std::vector<std::string> expectedMessages =
+	{
+		"foo.json: error: root must contain 'vertexFormat' member."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": {}"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex format must be an array."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [2]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex format element must be an object."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [{}]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex format element must contain 'name' string member."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": 1\n"
+		"        }\n"
+		"    ]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex format element must contain 'name' string member."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\"\n"
+		"        }\n"
+		"    ]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex format element must contain 'layout' string member."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"bar\"\n"
+		"        }\n"
+		"    ]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex format element layout 'bar' is invalid."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\"\n"
+		"        }\n"
+		"    ]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex format element must contain 'type' string member."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"bar\"\n"
+		"        }\n"
+		"    ]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex format element type 'bar' is invalid."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"float\"\n"
+		"        }\n"
+		"    ]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex format element layout 'r8g8b8a8' can't be used with type 'float'."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+}
+
+TEST(ConfigFileTest, InvalidIndexType)
+{
+	const char* json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": 1\n"
+		"}";
+
+	std::vector<std::string> messages;
+	ConfigFile configFile;
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	std::vector<std::string> expectedMessages =
+	{
+		"foo.json: error: index type must be a string."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": \"foo\"\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: index type 'foo' is invalid."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+}
+
+TEST(ConfigFileTest, InvalidVertexStream)
+{
+	const char* json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": \"uint16\"\n"
+		"}";
+
+	std::vector<std::string> messages;
+	ConfigFile configFile;
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	std::vector<std::string> expectedMessages =
+	{
+		"foo.json: error: root must contain 'vertexStreams' member."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": \"uint16\",\n"
+		"    \"vertexStreams\": {}\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex streams must be an array."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": \"uint16\",\n"
+		"    \"vertexStreams\": [2]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex stream element must be an object."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": \"uint16\",\n"
+		"    \"vertexStreams\": [{}]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex stream element must contain 'vertexFormat' member."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": \"uint16\",\n"
+		"    \"vertexStreams\": [\n"
+		"        {\n"
+		"            \"vertexFormat\": 1\n"
+		"        }\n"
+		"    ]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex format must be an array."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": \"uint16\",\n"
+		"    \"vertexStreams\": [\n"
+		"        {\n"
+		"            \"vertexFormat\": [\n"
+		"                {\n"
+		"                    \"name\": \"foo\",\n"
+		"                    \"layout\": \"r8g8b8a8\",\n"
+		"                    \"type\": \"unorm\"\n"
+		"                }\n"
+		"            ]\n"
+		"        }\n"
+		"    ]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex stream element must contain 'vertexData' string member."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": \"uint16\",\n"
+		"    \"vertexStreams\": [\n"
+		"        {\n"
+		"            \"vertexFormat\": [\n"
+		"                {\n"
+		"                    \"name\": \"foo\",\n"
+		"                    \"layout\": \"r8g8b8a8\",\n"
+		"                    \"type\": \"unorm\"\n"
+		"                }\n"
+		"            ],\n"
+		"            \"vertexData\": 1\n"
+		"        }\n"
+		"    ]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex stream element must contain 'vertexData' string member."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": \"uint16\",\n"
+		"    \"vertexStreams\": [\n"
+		"        {\n"
+		"            \"vertexFormat\": [\n"
+		"                {\n"
+		"                    \"name\": \"foo\",\n"
+		"                    \"layout\": \"r8g8b8a8\",\n"
+		"                    \"type\": \"unorm\"\n"
+		"                }\n"
+		"            ],\n"
+		"            \"vertexData\": \"vertices.dat\",\n"
+		"            \"indexType\": \"uint8\"\n"
+		"        }\n"
+		"    ]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: index type 'uint8' is invalid."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": \"uint16\",\n"
+		"    \"vertexStreams\": [\n"
+		"        {\n"
+		"            \"vertexFormat\": [\n"
+		"                {\n"
+		"                    \"name\": \"foo\",\n"
+		"                    \"layout\": \"r8g8b8a8\",\n"
+		"                    \"type\": \"unorm\"\n"
+		"                }\n"
+		"            ],\n"
+		"            \"vertexData\": \"vertices.dat\",\n"
+		"            \"indexType\": \"uint16\"\n"
+		"        }\n"
+		"    ]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex stream element must contain 'indexData' string member."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": \"uint16\",\n"
+		"    \"vertexStreams\": [\n"
+		"        {\n"
+		"            \"vertexFormat\": [\n"
+		"                {\n"
+		"                    \"name\": \"foo\",\n"
+		"                    \"layout\": \"r8g8b8a8\",\n"
+		"                    \"type\": \"unorm\"\n"
+		"                }\n"
+		"            ],\n"
+		"            \"vertexData\": \"vertices.dat\",\n"
+		"            \"indexType\": \"uint16\",\n"
+		"            \"indexData\": 1\n"
+		"        }\n"
+		"    ]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex stream element must contain 'indexData' string member."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+}
+
+TEST(ConfigFileTest, InvalidVertexTransform)
+{
+	const char* json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": \"uint16\",\n"
+		"    \"vertexStreams\": [\n"
+		"        {\n"
+		"            \"vertexFormat\": [\n"
+		"                {\n"
+		"                    \"name\": \"foo\",\n"
+		"                    \"layout\": \"r8g8b8a8\",\n"
+		"                    \"type\": \"unorm\"\n"
+		"                }\n"
+		"            ],\n"
+		"            \"vertexData\": \"vertices.dat\",\n"
+		"            \"indexType\": \"uint16\",\n"
+		"            \"indexData\": \"indices.dat\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"vertexTransforms\": {}"
+		"}";
+
+	std::vector<std::string> messages;
+	ConfigFile configFile;
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	std::vector<std::string> expectedMessages =
+	{
+		"foo.json: error: vertex transforms must be an array."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": \"uint16\",\n"
+		"    \"vertexStreams\": [\n"
+		"        {\n"
+		"            \"vertexFormat\": [\n"
+		"                {\n"
+		"                    \"name\": \"foo\",\n"
+		"                    \"layout\": \"r8g8b8a8\",\n"
+		"                    \"type\": \"unorm\"\n"
+		"                }\n"
+		"            ],\n"
+		"            \"vertexData\": \"vertices.dat\",\n"
+		"            \"indexType\": \"uint16\",\n"
+		"            \"indexData\": \"indices.dat\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"vertexTransforms\": [2]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex transform element must be an object."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": \"uint16\",\n"
+		"    \"vertexStreams\": [\n"
+		"        {\n"
+		"            \"vertexFormat\": [\n"
+		"                {\n"
+		"                    \"name\": \"foo\",\n"
+		"                    \"layout\": \"r8g8b8a8\",\n"
+		"                    \"type\": \"unorm\"\n"
+		"                }\n"
+		"            ],\n"
+		"            \"vertexData\": \"vertices.dat\",\n"
+		"            \"indexType\": \"uint16\",\n"
+		"            \"indexData\": \"indices.dat\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"vertexTransforms\": [{}]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex transform element must contain 'name' string member."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": \"uint16\",\n"
+		"    \"vertexStreams\": [\n"
+		"        {\n"
+		"            \"vertexFormat\": [\n"
+		"                {\n"
+		"                    \"name\": \"foo\",\n"
+		"                    \"layout\": \"r8g8b8a8\",\n"
+		"                    \"type\": \"unorm\"\n"
+		"                }\n"
+		"            ],\n"
+		"            \"vertexData\": \"vertices.dat\",\n"
+		"            \"indexType\": \"uint16\",\n"
+		"            \"indexData\": \"indices.dat\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"vertexTransforms\": [\n"
+		"        {\n"
+		"            \"name\": 1\n"
+		"        }\n"
+		"    ]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex transform element must contain 'name' string member."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": \"uint16\",\n"
+		"    \"vertexStreams\": [\n"
+		"        {\n"
+		"            \"vertexFormat\": [\n"
+		"                {\n"
+		"                    \"name\": \"foo\",\n"
+		"                    \"layout\": \"r8g8b8a8\",\n"
+		"                    \"type\": \"unorm\"\n"
+		"                }\n"
+		"            ],\n"
+		"            \"vertexData\": \"vertices.dat\",\n"
+		"            \"indexType\": \"uint16\",\n"
+		"            \"indexData\": \"indices.dat\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"vertexTransforms\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\"\n"
+		"        }\n"
+		"    ]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex transform element must contain 'transform' string member."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": \"uint16\",\n"
+		"    \"vertexStreams\": [\n"
+		"        {\n"
+		"            \"vertexFormat\": [\n"
+		"                {\n"
+		"                    \"name\": \"foo\",\n"
+		"                    \"layout\": \"r8g8b8a8\",\n"
+		"                    \"type\": \"unorm\"\n"
+		"                }\n"
+		"            ],\n"
+		"            \"vertexData\": \"vertices.dat\",\n"
+		"            \"indexType\": \"uint16\",\n"
+		"            \"indexData\": \"indices.dat\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"vertexTransforms\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"transform\": 1\n"
+		"        }\n"
+		"    ]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex transform element must contain 'transform' string member."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"indexType\": \"uint16\",\n"
+		"    \"vertexStreams\": [\n"
+		"        {\n"
+		"            \"vertexFormat\": [\n"
+		"                {\n"
+		"                    \"name\": \"foo\",\n"
+		"                    \"layout\": \"r8g8b8a8\",\n"
+		"                    \"type\": \"unorm\"\n"
+		"                }\n"
+		"            ],\n"
+		"            \"vertexData\": \"vertices.dat\",\n"
+		"            \"indexType\": \"uint16\",\n"
+		"            \"indexData\": \"indices.dat\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"vertexTransforms\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"transform\": \"bar\"\n"
+		"        }\n"
+		"    ]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: vertex transform 'bar' is invalid."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+}

@@ -240,7 +240,7 @@ static bool readIndexType(vfc::IndexType& outIndexType, const rapidjson::Value& 
 	if (!indexTypeIt->value.IsString())
 	{
 		std::string message = fileName;
-		message += ": error: index type must be an string.";
+		message += ": error: index type must be a string.";
 		errorFunction(message.c_str());
 		return false;
 	}
@@ -297,7 +297,7 @@ static std::vector<ConfigFile::VertexStream> readVertexStreams(const rapidjson::
 		if (formatIt == it->MemberEnd())
 		{
 			std::string message = fileName;
-			message += ": error: root must contain 'vertexFormat' element.";
+			message += ": error: vertex stream element must contain 'vertexFormat' member.";
 			errorFunction(message.c_str());
 			vertexStreams.clear();
 			return vertexStreams;
@@ -387,7 +387,7 @@ static bool readVertexTransforms(
 		}
 
 		auto transformIt = it->FindMember("transform");
-		if (transformIt == it->MemberEnd() || !nameIt->value.IsString())
+		if (transformIt == it->MemberEnd() || !transformIt->value.IsString())
 		{
 			std::string message = fileName;
 			message += ": error: vertex transform element must contain 'transform' string member.";
@@ -479,7 +479,7 @@ bool ConfigFile::load(const char* json, const char* fileName,
 	if (vertexStreamsIt == document.MemberEnd())
 	{
 		std::string message = fileName;
-		message += ": error: root must contain 'vertexStreams' element.";
+		message += ": error: root must contain 'vertexStreams' member.";
 		errorFunction(message.c_str());
 		return false;
 	}
