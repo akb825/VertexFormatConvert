@@ -20,6 +20,7 @@
 #include <VFC/Converter.h>
 #include <VFC/VertexFormat.h>
 #include <VFC/IndexData.h>
+#include <istream>
 #include <string>
 #include <vector>
 #include <utility>
@@ -49,6 +50,9 @@ public:
 	bool load(const char* fileName,
 		const vfc::Converter::ErrorFunction& errorFunction = &vfc::Converter::stderrErrorFunction);
 
+	bool load(std::istream& stream, const char* fileName,
+		const vfc::Converter::ErrorFunction& errorFunction = &vfc::Converter::stderrErrorFunction);
+
 	bool load(const char* json, const char* fileName,
 		const vfc::Converter::ErrorFunction& errorFunction = &vfc::Converter::stderrErrorFunction);
 
@@ -60,6 +64,16 @@ public:
 	vfc::IndexType getIndexType() const
 	{
 		return m_indexType;
+	}
+
+	vfc::PrimitiveType getPrimitiveType() const
+	{
+		return m_primitiveType;
+	}
+
+	std::uint32_t getPatchPoints() const
+	{
+		return m_patchPoints;
 	}
 
 	const std::vector<VertexStream>& getVertexStreams() const
@@ -75,6 +89,8 @@ public:
 private:
 	vfc::VertexFormat m_vertexFormat;
 	vfc::IndexType m_indexType = vfc::IndexType::NoIndices;
+	vfc::PrimitiveType m_primitiveType = vfc::PrimitiveType::TriangleList;
+	std::uint32_t m_patchPoints = 0;
 	std::vector<VertexStream> m_vertexStreams;
 	std::vector<std::pair<std::string, vfc::Converter::Transform>> m_transforms;
 };

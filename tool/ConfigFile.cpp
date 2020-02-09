@@ -267,6 +267,64 @@ static bool readIndexType(vfc::IndexType& outIndexType, const rapidjson::Value& 
 	}
 }
 
+static bool readPrimitiveType(vfc::PrimitiveType& outPrimitiveType, std::uint32_t& outPatchPoints,
+	const rapidjson::Value& rootValue, const char* fileName,
+	const vfc::Converter::ErrorFunction& errorFunction)
+{
+	auto primitiveTypeIt = rootValue.FindMember("primitiveType");
+	if (primitiveTypeIt == rootValue.MemberEnd() || primitiveTypeIt->value.IsNull())
+	{
+		outPrimitiveType = vfc::PrimitiveType::TriangleList;
+		outPatchPoints = 0;
+		return true;
+	}
+
+	if (!primitiveTypeIt->value.IsString())
+	{
+		std::string message = fileName;
+		message += ": error: primitive type must be a string.";
+		errorFunction(message.c_str());
+		return false;
+	}
+
+	const char* primitiveTypeStr = primitiveTypeIt->value.GetString();
+	outPrimitiveType = vfc::primitiveTypeFromName(primitiveTypeStr);
+	if (outPrimitiveType == vfc::PrimitiveType::Invalid)
+	{
+		std::string message = fileName;
+		message += ": error: primitive type '";
+		message += primitiveTypeStr;
+		message += "' is invalid.";
+		errorFunction(message.c_str());
+		return false;
+	}
+
+	if (outPrimitiveType == vfc::PrimitiveType::PatchList)
+	{
+		auto patchPointsIt = rootValue.FindMember("patchPoints");
+		if (patchPointsIt == rootValue.MemberEnd() || !patchPointsIt->value.IsInt())
+		{
+			std::string message = fileName;
+			message += ": error: root must contain 'patchPoints' int member.";
+			errorFunction(message.c_str());
+			return false;
+		}
+
+		int patchPoints = patchPointsIt->value.GetInt();
+		if (patchPoints <= 0)
+		{
+			std::string message = fileName;
+			message += ": error: patch points must have a value > 0.";
+			errorFunction(message.c_str());
+			return false;
+		}
+
+		outPatchPoints = patchPoints;
+	}
+
+	return true;
+}
+
 static std::vector<ConfigFile::VertexStream> readVertexStreams(const rapidjson::Value& value,
 	const char* fileName, const vfc::Converter::ErrorFunction& errorFunction)
 {
@@ -434,6 +492,12 @@ bool ConfigFile::load(const char* fileName, const vfc::Converter::ErrorFunction&
 		return false;
 	}
 
+	return load(stream, fileName, errorFunction);
+}
+
+bool ConfigFile::load(std::istream& stream, const char* fileName,
+	const vfc::Converter::ErrorFunction& errorFunction)
+{
 	std::string json(std::istreambuf_iterator<char>(stream), {});
 	return load(json.c_str(), fileName, errorFunction);
 }
@@ -473,6 +537,9 @@ bool ConfigFile::load(const char* json, const char* fileName,
 		return false;
 
 	if (!readIndexType(m_indexType, document, fileName, errorFunction))
+		return false;
+
+	if (!readPrimitiveType(m_primitiveType, m_patchPoints, document, fileName, errorFunction))
 		return false;
 
 	auto vertexStreamsIt = document.FindMember("vertexStreams");

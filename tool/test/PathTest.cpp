@@ -64,8 +64,10 @@ TEST(PathTest, Join)
 	EXPECT_EQ("foo\\bar", path::join("foo", "bar"));
 	EXPECT_EQ("foo/bar", path::join("foo/", "bar"));
 	EXPECT_EQ("foo\\bar", path::join("foo\\", "bar"));
+	EXPECT_EQ("C:\\bar", path::join("foo", "C:\\bar"));
 #else
 	EXPECT_EQ("foo/bar", path::join("foo", "bar"));
 	EXPECT_EQ("foo/bar", path::join("foo/", "bar"));
+	EXPECT_EQ("/bar", path::join("foo", "/bar"));
 #endif
 }

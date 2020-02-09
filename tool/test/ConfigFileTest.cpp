@@ -35,6 +35,8 @@ TEST(ConfigFileTest, CompleteConfig)
 		"        }\n"
 		"    ],\n"
 		"    \"indexType\": \"uint16\",\n"
+		"    \"primitiveType\": \"PatchList\",\n"
+		"    \"patchPoints\": 3,\n"
 		"    \"vertexStreams\": [\n"
 		"        {\n"
 		"            \"vertexFormat\": [\n"
@@ -79,6 +81,8 @@ TEST(ConfigFileTest, CompleteConfig)
 			vfc::ElementType::SNorm));
 	EXPECT_EQ(expectedVertexFormat, configFile.getVertexFormat());
 	EXPECT_EQ(vfc::IndexType::UInt16, configFile.getIndexType());
+	EXPECT_EQ(vfc::PrimitiveType::PatchList, configFile.getPrimitiveType());
+	EXPECT_EQ(3U, configFile.getPatchPoints());
 
 	vfc::VertexFormat expectedFirstFormat;
 	EXPECT_EQ(vfc::VertexFormat::AddResult::Succeeded,
@@ -349,6 +353,122 @@ TEST(ConfigFileTest, InvalidIndexType)
 	expectedMessages =
 	{
 		"foo.json: error: index type 'foo' is invalid."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+}
+
+TEST(ConfigFileTest, InvalidPrimitiveType)
+{
+	const char* json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"primitiveType\": 1\n"
+		"}";
+
+	std::vector<std::string> messages;
+	ConfigFile configFile;
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	std::vector<std::string> expectedMessages =
+	{
+		"foo.json: error: primitive type must be a string."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"primitiveType\": \"foo\"\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: primitive type 'foo' is invalid."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"primitiveType\": \"PatchList\"\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: root must contain 'patchPoints' int member."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"primitiveType\": \"PatchList\",\n"
+		"    \"patchPoints\": \"foo\"\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: root must contain 'patchPoints' int member."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [\n"
+		"        {\n"
+		"            \"name\": \"foo\",\n"
+		"            \"layout\": \"r8g8b8a8\",\n"
+		"            \"type\": \"uint\"\n"
+		"        }\n"
+		"    ],\n"
+		"    \"primitiveType\": \"PatchList\",\n"
+		"    \"patchPoints\": 0\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: patch points must have a value > 0."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 }

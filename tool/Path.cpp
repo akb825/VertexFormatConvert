@@ -81,7 +81,7 @@ std::string getParentDirectory(const std::string& path)
 
 std::string join(const std::string& left, const std::string& right)
 {
-	if (left.empty())
+	if (left.empty() || isAbsolute(right))
 		return right;
 	else if (right.empty())
 		return left;
