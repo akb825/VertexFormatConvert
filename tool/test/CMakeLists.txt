@@ -5,7 +5,7 @@ endif()
 find_package(Threads)
 
 file(GLOB_RECURSE sources *.cpp *.h)
-list(APPEND sources ../ConfigFile.h ../ConfigFile.cpp)
+list(APPEND sources ../ConfigFile.h ../ConfigFile.cpp ../ResultFile.h ../ResultFile.cpp)
 add_executable(vfc_tool_test ${sources})
 
 target_include_directories(vfc_tool_test PRIVATE ${GTEST_INCLUDE_DIRS} .. ../rapidjson/include)
