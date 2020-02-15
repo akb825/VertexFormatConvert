@@ -21,6 +21,17 @@
 #include "ResultFile.h"
 
 #include <cstdio>
+#include <cstring>
+#include <fstream>
+#include <iostream>
+
+#include <errno.h>
+#include <sys/stat.h>
+
+#if VFC_WINDOWS
+#include <direct.h>
+#define mkdir(path, mode) _mkdir(path)
+#endif
 
 void printHelp(const char* argv0)
 {
@@ -107,13 +118,239 @@ void printHelp(const char* argv0)
 	std::printf("    index. This can be applied when drawing the mesh.\n");
 	std::printf("  - indexData: The path to a data file containing the output indices.\n");
 
-	std::printf("\nAll output files are placed in the directory provided by the --output\n");
-	std::printf("command-line option.\n");
+	std::printf("\nAll output files are placed in the directory provided by the --output command-\n");
+	std::printf("line option.\n");
+}
+
+bool mkdirRecursive(const std::string& directory)
+{
+	std::string parentDir = path::getParentDirectory(directory);
+	if (!parentDir.empty() && !mkdirRecursive(parentDir))
+		return false;
+
+	return mkdir(directory.c_str(), 0755) == 0 || errno == EEXIST;
+}
+
+bool loadFile(std::vector<std::uint8_t>& outData, const std::string& fileName)
+{
+	std::ifstream stream(fileName, std::ios_base::in | std::ios_base::binary);
+	if (!stream.is_open())
+		return false;
+
+	outData.insert(outData.end(), std::istreambuf_iterator<char>(stream), {});
+	return stream.eof();
+}
+
+bool setupConverter(vfc::Converter& converter, const ConfigFile& configFile,
+	const std::string& configFilePath, const std::string& configFileDir,
+	std::vector<std::vector<std::uint8_t>>& storage)
+{
+	for (const ConfigFile::VertexStream& vertexStream : configFile.getVertexStreams())
+	{
+		std::vector<std::uint8_t> vertexData;
+		std::string vertexDataPath = path::join(configFileDir, vertexStream.vertexData);
+		if (!loadFile(vertexData, vertexDataPath))
+		{
+			std::fprintf(stderr, "%s: error: couldn't read vertex data file '%s'.\n",
+				configFilePath.c_str(), vertexDataPath.c_str());
+			return false;
+		}
+
+		if (vertexData.size() % vertexStream.vertexFormat.stride() != 0)
+		{
+			std::fprintf(stderr,
+				"%s: error: vertex data '%s' isn't divisible by the vertex format size.\n",
+				configFilePath.c_str(), vertexDataPath.c_str());
+			return false;
+		}
+
+		std::vector<std::uint8_t> indexData;
+		unsigned int indexSize = 1; // Avoid divide by 0 when no indices.
+		if (vertexStream.indexType != vfc::IndexType::NoIndices)
+		{
+			std::string indexDataPath = path::join(configFileDir, vertexStream.indexData);
+			if (!loadFile(indexData, indexDataPath))
+			{
+				std::fprintf(stderr, "%s: error: couldn't read index data file '%s'.\n",
+					configFilePath.c_str(), vertexDataPath.c_str());
+				return false;
+			}
+
+			unsigned int indexSize = vfc::indexSize(vertexStream.indexType);
+			if (vertexData.size() % indexSize != 0)
+			{
+				std::fprintf(stderr,
+					"%s: error: index data '%s' isn't divisible by the index format size.\n",
+					configFilePath.c_str(), indexDataPath.c_str());
+				return false;
+			}
+		}
+
+		auto vertexCount =
+			static_cast<std::uint32_t>(vertexData.size()/vertexStream.vertexFormat.stride());
+		auto indexCount = static_cast<std::uint32_t>(indexData.size()/indexSize);
+		if (!converter.addVertexStream(vertexStream.vertexFormat, vertexData.data(), vertexCount,
+				vertexStream.indexType, indexData.data(), indexCount))
+		{
+			return false;
+		}
+
+		storage.push_back(std::move(vertexData));
+		if (!indexData.empty())
+			storage.push_back(std::move(indexData));
+	}
+
+	for (const auto& transform : configFile.getTransforms())
+	{
+		if (!converter.setElementTransform(transform.first, transform.second))
+		{
+			std::fprintf(stderr,
+				"%s: error: no vertex element '%s' found for vertex format.\n",
+				configFilePath.c_str(), transform.first.c_str());
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool writeFile(const void* data, std::size_t size, const std::string& fileName)
+{
+	std::ofstream stream(fileName,
+		std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
+	if (!stream.is_open())
+		return false;
+
+	stream.write(reinterpret_cast<const char*>(data), size);
+	return stream.good();
+}
+
+std::string writeOutput(const vfc::Converter& converter, const std::string& outputDir)
+{
+	std::string vertexDataPath = path::join(outputDir, "vertices.dat");
+	const std::vector<std::uint8_t>& vertices = converter.getVertices();
+	if (!writeFile(vertices.data(), vertices.size(), vertexDataPath))
+	{
+		std::fprintf(stderr, "error: couldn't write vertex output file '%s'.\n",
+			vertexDataPath.c_str());
+		return "";
+	}
+
+	std::vector<IndexFileData> indexFileData;
+	std::vector<std::string> names;
+	indexFileData.reserve(converter.getIndices().size());
+	names.reserve(indexFileData.size());
+	std::string fileName;
+	for (const vfc::IndexData& indexData : converter.getIndices())
+	{
+		fileName = "indices.";
+		fileName += std::to_string(indexFileData.size());
+		fileName += ".dat";
+		std::string indexDataPath = path::join(outputDir, fileName);
+		std::size_t indexSize =
+			static_cast<std::size_t>(indexData.count)*vfc::indexSize(indexData.type);
+		if (!writeFile(indexData.data, indexSize, indexDataPath))
+		{
+			std::fprintf(stderr, "error: couldn't write index output file '%s'.\n",
+				indexDataPath.c_str());
+			return "";
+		}
+
+		indexFileData.push_back(
+			IndexFileData{indexData.count, indexData.baseVertex, indexDataPath.c_str()});
+		names.push_back(std::move(indexDataPath));
+	}
+
+	return resultFile(converter.getVertexFormat(), converter.getVertexCount(),
+		vertexDataPath.c_str(), converter.getIndexType(), indexFileData.data(),
+		indexFileData.size());
 }
 
 int main(int argc, const char** argv)
 {
-	(void)argc;
-	printHelp(argv[0]);
+	if (argc == 1)
+	{
+		printHelp(argv[0]);
+		return 1;
+	}
+
+	std::string input;
+	std::string output;
+	for (int i = 1; i < argc; ++i)
+	{
+		if (std::strcmp(argv[i], "-h") == 0 || std::strcmp(argv[i], "--help") == 0)
+		{
+			printHelp(argv[0]);
+			return 0;
+		}
+		else if (std::strcmp(argv[i], "-i") == 0 || std::strcmp(argv[i], "--input") == 0)
+		{
+			if (i == argc - 1)
+			{
+				std::fprintf(stderr, "error: --input requires an argument.\n");
+				return 1;
+			}
+
+			input = argv[++i];
+		}
+		else if (std::strcmp(argv[i], "-o") == 0 || std::strcmp(argv[i], "--output") == 0)
+		{
+			if (i == argc - 1)
+			{
+				std::fprintf(stderr, "error: --output requires an argument.\n");
+				return 1;
+			}
+
+			output = argv[++i];
+		}
+		else
+		{
+			std::fprintf(stderr, "error: unknown argument '%s'.\n", argv[i]);
+			return 1;
+		}
+	}
+
+	if (output.empty())
+	{
+		std::fprintf(stderr, "error: required command-line option --output not provided.\n");
+		return 1;
+	}
+
+	ConfigFile configFile;
+	std::string configFileDir;
+	bool configLoadResult = false;
+	if (input.empty())
+	{
+		configLoadResult = configFile.load(std::cin, "stdin");
+		input = "stdin";
+	}
+	else
+	{
+		configLoadResult = configFile.load(input.c_str());
+		configFileDir = path::getParentDirectory(input.c_str());
+	}
+	if (!configLoadResult)
+		return 1;
+
+	vfc::Converter converter(configFile.getVertexFormat(), configFile.getIndexType(),
+		configFile.getPrimitiveType(), configFile.getPatchPoints());
+	std::vector<std::vector<std::uint8_t>> storage;
+	if (!converter || !setupConverter(converter, configFile, input, configFileDir, storage))
+		return 1;
+
+	if (!mkdirRecursive(output))
+	{
+		std::fprintf(stderr, "error: couldn't create output path '%s'.\n", output.c_str());
+		return 1;
+	}
+
+	if (!converter.convert())
+		return 1;
+
+	std::string result = writeOutput(converter, output);
+	if (result.empty())
+		return 1;
+
+	std::printf("%s\n", result.c_str());
 	return 0;
 }
