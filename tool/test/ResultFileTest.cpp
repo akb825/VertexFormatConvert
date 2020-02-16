@@ -26,8 +26,15 @@ TEST(ResultFileTest, NoIndices)
 	ASSERT_EQ(vfc::VertexFormat::AddResult::Succeeded,
 		vertexFormat.appendElement("texCoord", vfc::ElementLayout::X16Y16,
 			vfc::ElementType::UNorm));
-	std::string result = resultFile(vertexFormat, 6, "vertices.dat", vfc::IndexType::NoIndices,
-		nullptr, 0);
+
+	Bounds bounds[2] =
+	{
+		Bounds{vfc::VertexValue(-1, -2, -3, -4), vfc::VertexValue(1, 2, 3, 4)},
+		Bounds{vfc::VertexValue(0, 0), vfc::VertexValue(1, 1)}
+	};
+
+	std::string result = resultFile(vertexFormat, bounds, 6, "vertices.dat",
+		vfc::IndexType::NoIndices, nullptr, 0);
 
 	const char* expectedResult =
 		"{\n"
@@ -36,13 +43,37 @@ TEST(ResultFileTest, NoIndices)
 		"            \"name\": \"position\",\n"
 		"            \"layout\": \"X16Y16Z16W16\",\n"
 		"            \"type\": \"Float\",\n"
-		"            \"offset\": 0\n"
+		"            \"offset\": 0,\n"
+		"            \"minValue\": [\n"
+		"                -1.0,\n"
+		"                -2.0,\n"
+		"                -3.0,\n"
+		"                -4.0\n"
+		"            ],\n"
+		"            \"maxValue\": [\n"
+		"                1.0,\n"
+		"                2.0,\n"
+		"                3.0,\n"
+		"                4.0\n"
+		"            ]\n"
 		"        },\n"
 		"        {\n"
 		"            \"name\": \"texCoord\",\n"
 		"            \"layout\": \"X16Y16\",\n"
 		"            \"type\": \"UNorm\",\n"
-		"            \"offset\": 8\n"
+		"            \"offset\": 8,\n"
+		"            \"minValue\": [\n"
+		"                0.0,\n"
+		"                0.0,\n"
+		"                0.0,\n"
+		"                1.0\n"
+		"            ],\n"
+		"            \"maxValue\": [\n"
+		"                1.0,\n"
+		"                1.0,\n"
+		"                0.0,\n"
+		"                1.0\n"
+		"            ]\n"
 		"        }\n"
 		"    ],\n"
 		"    \"vertexStride\": 12,\n"
@@ -61,12 +92,20 @@ TEST(ResultFileTest, WithIndices)
 	ASSERT_EQ(vfc::VertexFormat::AddResult::Succeeded,
 		vertexFormat.appendElement("texCoord", vfc::ElementLayout::X16Y16,
 			vfc::ElementType::UNorm));
+
+	Bounds bounds[2] =
+	{
+		Bounds{vfc::VertexValue(-1, -2, -3, -4), vfc::VertexValue(1, 2, 3, 4)},
+		Bounds{vfc::VertexValue(0, 0), vfc::VertexValue(1, 1)}
+	};
+
 	std::vector<IndexFileData> indexData =
 	{
 		IndexFileData{6, 0, "indices.0.dat"},
 		IndexFileData{6, 4, "indices.1.dat"}
 	};
-	std::string result = resultFile(vertexFormat, 8, "vertices.dat", vfc::IndexType::UInt16,
+
+	std::string result = resultFile(vertexFormat, bounds, 8, "vertices.dat", vfc::IndexType::UInt16,
 		indexData.data(), indexData.size());
 
 	const char* expectedResult =
@@ -76,13 +115,37 @@ TEST(ResultFileTest, WithIndices)
 		"            \"name\": \"position\",\n"
 		"            \"layout\": \"X16Y16Z16W16\",\n"
 		"            \"type\": \"Float\",\n"
-		"            \"offset\": 0\n"
+		"            \"offset\": 0,\n"
+		"            \"minValue\": [\n"
+		"                -1.0,\n"
+		"                -2.0,\n"
+		"                -3.0,\n"
+		"                -4.0\n"
+		"            ],\n"
+		"            \"maxValue\": [\n"
+		"                1.0,\n"
+		"                2.0,\n"
+		"                3.0,\n"
+		"                4.0\n"
+		"            ]\n"
 		"        },\n"
 		"        {\n"
 		"            \"name\": \"texCoord\",\n"
 		"            \"layout\": \"X16Y16\",\n"
 		"            \"type\": \"UNorm\",\n"
-		"            \"offset\": 8\n"
+		"            \"offset\": 8,\n"
+		"            \"minValue\": [\n"
+		"                0.0,\n"
+		"                0.0,\n"
+		"                0.0,\n"
+		"                1.0\n"
+		"            ],\n"
+		"            \"maxValue\": [\n"
+		"                1.0,\n"
+		"                1.0,\n"
+		"                0.0,\n"
+		"                1.0\n"
+		"            ]\n"
 		"        }\n"
 		"    ],\n"
 		"    \"vertexStride\": 12,\n"

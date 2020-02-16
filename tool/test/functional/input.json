@@ -1,0 +1,45 @@
+{
+	"vertexFormat":
+	[
+		{
+			"name": "position",
+			"layout": "X16Y16",
+			"type": "float"
+		},
+		{
+			"name": "texcoord",
+			"layout": "X16Y16",
+			"type": "UNorm"
+		}
+	],
+	"indexType": "UInt16",
+	"vertexStreams":
+	[
+		{
+			"vertexFormat":
+			[
+				{
+					"name": "position",
+					"layout": "X32Y32",
+					"type": "float"
+				}
+			],
+			"vertexData": "input.positions.dat",
+			"indexType": "UInt32",
+			"indexData": "input.position.indices.dat"
+		},
+		{
+			"vertexFormat":
+			[
+				{
+					"name": "texcoord",
+					"layout": "X32Y32",
+					"type": "float"
+				}
+			],
+			"vertexData": "input.texcoords.dat",
+			"indexType": "UInt16",
+			"indexData": "input.texcoord.indices.dat"
+		}
+	]
+}

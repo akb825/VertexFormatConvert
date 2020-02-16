@@ -32,44 +32,44 @@ static const char* getErrorString(rapidjson::ParseErrorCode error)
 	switch (error)
 	{
 		case rapidjson::kParseErrorNone:
-			return "no error.";
+			return "No error.";
 		case rapidjson::kParseErrorDocumentEmpty:
-			return "empty document.";
+			return "Empty document.";
 		case rapidjson::kParseErrorDocumentRootNotSingular:
-			return "multiple document roots.";
+			return "Multiple document roots.";
 		case rapidjson::kParseErrorValueInvalid:
-			return "invalid value.";
+			return "Invalid value.";
 		case rapidjson::kParseErrorObjectMissName:
-			return "missing name for object member.";
+			return "Missing name for object member.";
 		case rapidjson::kParseErrorObjectMissColon:
-			return "missing ':' after object member name.";
+			return "Missing ':' after object member name.";
 		case rapidjson::kParseErrorObjectMissCommaOrCurlyBracket:
-			return "missing ',' or '}' after object member.";
+			return "Missing ',' or '}' after object member.";
 		case rapidjson::kParseErrorArrayMissCommaOrSquareBracket:
-			return "missing ',' or ']' after array member.";
+			return "Missing ',' or ']' after array member.";
 		case rapidjson::kParseErrorStringUnicodeEscapeInvalidHex:
-			return "invalid digit after \\u escape in string.";
+			return "Invalid digit after \\u escape in string.";
 		case rapidjson::kParseErrorStringUnicodeSurrogateInvalid:
-			return "invalid surrogate pair in string.";
+			return "Invalid surrogate pair in string.";
 		case rapidjson::kParseErrorStringEscapeInvalid:
-			return "invalid escape character.";
+			return "Invalid escape character.";
 		case rapidjson::kParseErrorStringMissQuotationMark:
-			return "missing closing '\"' for string.";
+			return "Missing closing '\"' for string.";
 		case rapidjson::kParseErrorStringInvalidEncoding:
-			return "invalid string encoding.";
+			return "Invalid string encoding.";
 		case rapidjson::kParseErrorNumberTooBig:
-			return "number is too large to store in a double.";
+			return "Number is too large to store in a double.";
 		case rapidjson::kParseErrorNumberMissFraction:
-			return "missing fraction part in number.";
+			return "Missing fraction part in number.";
 		case rapidjson::kParseErrorNumberMissExponent:
-			return "missing exponent in number.";
+			return "Missing exponent in number.";
 		case rapidjson::kParseErrorTermination:
-			return "parsing was terminated.";
+			return "Parsing was terminated.";
 		case rapidjson::kParseErrorUnspecificSyntaxError:
-			return "syntax error.";
+			return "Syntax error.";
 	}
 
-	return "unknown error";
+	return "Unknown error";
 }
 
 static std::pair<unsigned int, unsigned int> getLineColumn(const char* json, std::size_t offset)
@@ -119,7 +119,7 @@ static vfc::VertexFormat readVertexFormat(const rapidjson::Value& value, const c
 	if (!value.IsArray())
 	{
 		std::string message = fileName;
-		message += ": error: vertex format must be an array.";
+		message += ": error: Vertex format must be an array.";
 		errorFunction(message.c_str());
 		return vertexFormat;
 	}
@@ -129,7 +129,7 @@ static vfc::VertexFormat readVertexFormat(const rapidjson::Value& value, const c
 		if (!it->IsObject())
 		{
 			std::string message = fileName;
-			message += ": error: vertex format element must be an object.";
+			message += ": error: Vertex format element must be an object.";
 			errorFunction(message.c_str());
 			vertexFormat.clear();
 			return vertexFormat;
@@ -139,7 +139,7 @@ static vfc::VertexFormat readVertexFormat(const rapidjson::Value& value, const c
 		if (nameIt == it->MemberEnd() || !nameIt->value.IsString())
 		{
 			std::string message = fileName;
-			message += ": error: vertex format element must contain 'name' string member.";
+			message += ": error: Vertex format element must contain 'name' string member.";
 			errorFunction(message.c_str());
 			vertexFormat.clear();
 			return vertexFormat;
@@ -149,7 +149,7 @@ static vfc::VertexFormat readVertexFormat(const rapidjson::Value& value, const c
 		if (layoutIt == it->MemberEnd() || !layoutIt->value.IsString())
 		{
 			std::string message = fileName;
-			message += ": error: vertex format element must contain 'layout' string member.";
+			message += ": error: Vertex format element must contain 'layout' string member.";
 			errorFunction(message.c_str());
 			vertexFormat.clear();
 			return vertexFormat;
@@ -159,7 +159,7 @@ static vfc::VertexFormat readVertexFormat(const rapidjson::Value& value, const c
 		if (layout == vfc::ElementLayout::Invalid)
 		{
 			std::string message = fileName;
-			message += ": error: vertex format element layout '";
+			message += ": error: Vertex format element layout '";
 			message += layoutIt->value.GetString();
 			message += "' is invalid.";
 			errorFunction(message.c_str());
@@ -171,7 +171,7 @@ static vfc::VertexFormat readVertexFormat(const rapidjson::Value& value, const c
 		if (typeIt == it->MemberEnd() || !typeIt->value.IsString())
 		{
 			std::string message = fileName;
-			message += ": error: vertex format element must contain 'type' string member.";
+			message += ": error: Vertex format element must contain 'type' string member.";
 			errorFunction(message.c_str());
 			vertexFormat.clear();
 			return vertexFormat;
@@ -181,7 +181,7 @@ static vfc::VertexFormat readVertexFormat(const rapidjson::Value& value, const c
 		if (type == vfc::ElementType::Invalid)
 		{
 			std::string message = fileName;
-			message += ": error: vertex format element type '";
+			message += ": error: Vertex format element type '";
 			message += typeIt->value.GetString();
 			message += "' is invalid.";
 			errorFunction(message.c_str());
@@ -197,14 +197,14 @@ static vfc::VertexFormat readVertexFormat(const rapidjson::Value& value, const c
 			message += ": error: ";
 			if (result == vfc::VertexFormat::AddResult::NameNotUnique)
 			{
-				message += "vertex format element name '";
+				message += "Vertex format element name '";
 				message += nameIt->value.GetString();
 				message += "' isn't unique.";
 			}
 			else
 			{
 				assert(result == vfc::VertexFormat::AddResult::ElementInvalid);
-				message += "vertex format element layout '";
+				message += "Vertex format element layout '";
 				message += layoutIt->value.GetString();
 				message += "' can't be used with type '";
 				message += typeIt->value.GetString();
@@ -220,7 +220,7 @@ static vfc::VertexFormat readVertexFormat(const rapidjson::Value& value, const c
 	if (vertexFormat.empty())
 	{
 		std::string message = fileName;
-		message += ": error: vertex format is empty.";
+		message += ": error: Vertex format is empty.";
 		errorFunction(message.c_str());
 	}
 
@@ -240,7 +240,7 @@ static bool readIndexType(vfc::IndexType& outIndexType, const rapidjson::Value& 
 	if (!indexTypeIt->value.IsString())
 	{
 		std::string message = fileName;
-		message += ": error: index type must be a string.";
+		message += ": error: Index type must be a string.";
 		errorFunction(message.c_str());
 		return false;
 	}
@@ -259,7 +259,7 @@ static bool readIndexType(vfc::IndexType& outIndexType, const rapidjson::Value& 
 	else
 	{
 		std::string message = fileName;
-		message += ": error: index type '";
+		message += ": error: Index type '";
 		message += indexTypeStr;
 		message += "' is invalid.";
 		errorFunction(message.c_str());
@@ -282,7 +282,7 @@ static bool readPrimitiveType(vfc::PrimitiveType& outPrimitiveType, std::uint32_
 	if (!primitiveTypeIt->value.IsString())
 	{
 		std::string message = fileName;
-		message += ": error: primitive type must be a string.";
+		message += ": error: Primitive type must be a string.";
 		errorFunction(message.c_str());
 		return false;
 	}
@@ -292,7 +292,7 @@ static bool readPrimitiveType(vfc::PrimitiveType& outPrimitiveType, std::uint32_
 	if (outPrimitiveType == vfc::PrimitiveType::Invalid)
 	{
 		std::string message = fileName;
-		message += ": error: primitive type '";
+		message += ": error: Primitive type '";
 		message += primitiveTypeStr;
 		message += "' is invalid.";
 		errorFunction(message.c_str());
@@ -305,7 +305,7 @@ static bool readPrimitiveType(vfc::PrimitiveType& outPrimitiveType, std::uint32_
 		if (patchPointsIt == rootValue.MemberEnd() || !patchPointsIt->value.IsInt())
 		{
 			std::string message = fileName;
-			message += ": error: root must contain 'patchPoints' int member.";
+			message += ": error: Root must contain 'patchPoints' int member.";
 			errorFunction(message.c_str());
 			return false;
 		}
@@ -314,7 +314,7 @@ static bool readPrimitiveType(vfc::PrimitiveType& outPrimitiveType, std::uint32_
 		if (patchPoints <= 0)
 		{
 			std::string message = fileName;
-			message += ": error: patch points must have a value > 0.";
+			message += ": error: Patch points must have a value > 0.";
 			errorFunction(message.c_str());
 			return false;
 		}
@@ -332,7 +332,7 @@ static std::vector<ConfigFile::VertexStream> readVertexStreams(const rapidjson::
 	if (!value.IsArray())
 	{
 		std::string message = fileName;
-		message += ": error: vertex streams must be an array.";
+		message += ": error: Vertex streams must be an array.";
 		errorFunction(message.c_str());
 		return vertexStreams;
 	}
@@ -342,7 +342,7 @@ static std::vector<ConfigFile::VertexStream> readVertexStreams(const rapidjson::
 		if (!it->IsObject())
 		{
 			std::string message = fileName;
-			message += ": error: vertex stream element must be an object.";
+			message += ": error: Vertex stream element must be an object.";
 			errorFunction(message.c_str());
 			vertexStreams.clear();
 			return vertexStreams;
@@ -355,7 +355,7 @@ static std::vector<ConfigFile::VertexStream> readVertexStreams(const rapidjson::
 		if (formatIt == it->MemberEnd())
 		{
 			std::string message = fileName;
-			message += ": error: vertex stream element must contain 'vertexFormat' member.";
+			message += ": error: Vertex stream element must contain 'vertexFormat' member.";
 			errorFunction(message.c_str());
 			vertexStreams.clear();
 			return vertexStreams;
@@ -372,7 +372,7 @@ static std::vector<ConfigFile::VertexStream> readVertexStreams(const rapidjson::
 		if (vertexDataIt == it->MemberEnd() || !vertexDataIt->value.IsString())
 		{
 			std::string message = fileName;
-			message += ": error: vertex stream element must contain 'vertexData' string member.";
+			message += ": error: Vertex stream element must contain 'vertexData' string member.";
 			errorFunction(message.c_str());
 			vertexStreams.clear();
 			return vertexStreams;
@@ -392,7 +392,7 @@ static std::vector<ConfigFile::VertexStream> readVertexStreams(const rapidjson::
 			if (indexDataIt == it->MemberEnd() || !indexDataIt->value.IsString())
 			{
 				std::string message = fileName;
-				message += ": error: vertex stream element must contain 'indexData' string member.";
+				message += ": error: Vertex stream element must contain 'indexData' string member.";
 				errorFunction(message.c_str());
 				vertexStreams.clear();
 				return vertexStreams;
@@ -405,7 +405,7 @@ static std::vector<ConfigFile::VertexStream> readVertexStreams(const rapidjson::
 	if (vertexStreams.empty())
 	{
 		std::string message = fileName;
-		message += ": error: vertex streams are empty.";
+		message += ": error: Vertex streams are empty.";
 		errorFunction(message.c_str());
 	}
 
@@ -420,7 +420,7 @@ static bool readVertexTransforms(
 	if (!value.IsArray())
 	{
 		std::string message = fileName;
-		message += ": error: vertex transforms must be an array.";
+		message += ": error: Vertex transforms must be an array.";
 		errorFunction(message.c_str());
 		return false;
 	}
@@ -430,7 +430,7 @@ static bool readVertexTransforms(
 		if (!it->IsObject())
 		{
 			std::string message = fileName;
-			message += ": error: vertex transform element must be an object.";
+			message += ": error: Vertex transform element must be an object.";
 			errorFunction(message.c_str());
 			return false;
 		}
@@ -439,7 +439,7 @@ static bool readVertexTransforms(
 		if (nameIt == it->MemberEnd() || !nameIt->value.IsString())
 		{
 			std::string message = fileName;
-			message += ": error: vertex transform element must contain 'name' string member.";
+			message += ": error: Vertex transform element must contain 'name' string member.";
 			errorFunction(message.c_str());
 			return false;
 		}
@@ -448,7 +448,7 @@ static bool readVertexTransforms(
 		if (transformIt == it->MemberEnd() || !transformIt->value.IsString())
 		{
 			std::string message = fileName;
-			message += ": error: vertex transform element must contain 'transform' string member.";
+			message += ": error: Vertex transform element must contain 'transform' string member.";
 			errorFunction(message.c_str());
 			return false;
 		}
@@ -466,7 +466,7 @@ static bool readVertexTransforms(
 		else
 		{
 			std::string message = fileName;
-			message += ": error: vertex transform '";
+			message += ": error: Vertex transform '";
 			message += transformStr;
 			message += "' is invalid.";
 			errorFunction(message.c_str());
@@ -485,7 +485,7 @@ bool ConfigFile::load(const char* fileName, const vfc::Converter::ErrorFunction&
 	std::ifstream stream(fileName);
 	if (!stream.is_open())
 	{
-		std::string message = "Couldn't open config file '";
+		std::string message = "error: Couldn't open config file '";
 		message += fileName;
 		message += "'.";
 		errorFunction(message.c_str());
@@ -518,7 +518,7 @@ bool ConfigFile::load(const char* json, const char* fileName,
 	if (!document.IsObject())
 	{
 		std::string message = fileName;
-		message += ": error: root element must be an object.";
+		message += ": error: Root element must be an object.";
 		errorFunction(message.c_str());
 		return false;
 	}
@@ -527,7 +527,7 @@ bool ConfigFile::load(const char* json, const char* fileName,
 	if (vertexFormatIt == document.MemberEnd())
 	{
 		std::string message = fileName;
-		message += ": error: root must contain 'vertexFormat' member.";
+		message += ": error: Root must contain 'vertexFormat' member.";
 		errorFunction(message.c_str());
 		return false;
 	}
@@ -546,7 +546,7 @@ bool ConfigFile::load(const char* json, const char* fileName,
 	if (vertexStreamsIt == document.MemberEnd())
 	{
 		std::string message = fileName;
-		message += ": error: root must contain 'vertexStreams' member.";
+		message += ": error: Root must contain 'vertexStreams' member.";
 		errorFunction(message.c_str());
 		return false;
 	}

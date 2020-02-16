@@ -19,9 +19,9 @@
 #include <rapidjson/prettywriter.h>
 #include <cassert>
 
-std::string resultFile(const vfc::VertexFormat& vertexFormat, std::uint32_t vertexCount,
-	const char* vertexData, vfc::IndexType indexType, const IndexFileData* indexData,
-	std::size_t indexDataCount)
+std::string resultFile(const vfc::VertexFormat& vertexFormat, const Bounds* bounds,
+	std::uint32_t vertexCount, const char* vertexData, vfc::IndexType indexType,
+	const IndexFileData* indexData, std::size_t indexDataCount)
 {
 	assert(indexDataCount == 0 || indexData);
 	rapidjson::Document document(rapidjson::kObjectType);
@@ -29,10 +29,11 @@ std::string resultFile(const vfc::VertexFormat& vertexFormat, std::uint32_t vert
 	rapidjson::Value vertexFormatArray(rapidjson::kArrayType);
 	vertexFormatArray.Reserve(static_cast<std::uint32_t>(vertexFormat.size()),
 		document.GetAllocator());
-	for (const vfc::VertexElement& element : vertexFormat)
+	for (std::size_t i = 0; i < vertexFormat.size(); ++i)
 	{
+		const vfc::VertexElement& element = vertexFormat[i];
 		rapidjson::Value elementObject(rapidjson::kObjectType);
-		elementObject.MemberReserve(4, document.GetAllocator());
+		elementObject.MemberReserve(6, document.GetAllocator());
 		elementObject.AddMember("name", rapidjson::StringRef(element.name.c_str()),
 			document.GetAllocator());
 		elementObject.AddMember("layout",
@@ -40,6 +41,19 @@ std::string resultFile(const vfc::VertexFormat& vertexFormat, std::uint32_t vert
 		elementObject.AddMember("type",
 			rapidjson::StringRef(vfc::elementTypeName(element.type)), document.GetAllocator());
 		elementObject.AddMember("offset", element.offset, document.GetAllocator());
+
+		rapidjson::Value minBoundsArray(rapidjson::kArrayType);
+		rapidjson::Value maxBoundsArray(rapidjson::kArrayType);
+		minBoundsArray.Reserve(4, document.GetAllocator());
+		maxBoundsArray.Reserve(4, document.GetAllocator());
+		for (unsigned int j = 0; j < 4; ++j)
+		{
+			minBoundsArray.PushBack(bounds[i].min[j], document.GetAllocator());
+			maxBoundsArray.PushBack(bounds[i].max[j], document.GetAllocator());
+		}
+		elementObject.AddMember("minValue", minBoundsArray, document.GetAllocator());
+		elementObject.AddMember("maxValue", maxBoundsArray, document.GetAllocator());
+
 		vertexFormatArray.PushBack(elementObject, document.GetAllocator());
 	}
 	document.AddMember("vertexFormat", vertexFormatArray, document.GetAllocator());

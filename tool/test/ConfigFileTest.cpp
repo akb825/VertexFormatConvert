@@ -120,9 +120,9 @@ TEST(ConfigFileTest, InvalidJson)
 	std::vector<std::string> expectedMessages =
 	{
 #if VFC_WINDOWS
-		"foo.json(2, 18) : error: missing ',' or '}' after object member."
+		"foo.json(2, 18) : error: Missing ',' or '}' after object member."
 #else
-		"foo.json:2:18: error: missing ',' or '}' after object member."
+		"foo.json:2:18: error: Missing ',' or '}' after object member."
 #endif
 	};
 	EXPECT_EQ(expectedMessages, messages);
@@ -139,7 +139,7 @@ TEST(ConfigFileTest, InvalidVertexFormat)
 
 	std::vector<std::string> expectedMessages =
 	{
-		"foo.json: error: root must contain 'vertexFormat' member."
+		"foo.json: error: Root must contain 'vertexFormat' member."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -154,7 +154,7 @@ TEST(ConfigFileTest, InvalidVertexFormat)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex format must be an array."
+		"foo.json: error: Vertex format must be an array."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -169,7 +169,7 @@ TEST(ConfigFileTest, InvalidVertexFormat)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex format element must be an object."
+		"foo.json: error: Vertex format element must be an object."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -184,7 +184,7 @@ TEST(ConfigFileTest, InvalidVertexFormat)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex format element must contain 'name' string member."
+		"foo.json: error: Vertex format element must contain 'name' string member."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -203,7 +203,7 @@ TEST(ConfigFileTest, InvalidVertexFormat)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex format element must contain 'name' string member."
+		"foo.json: error: Vertex format element must contain 'name' string member."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -222,7 +222,7 @@ TEST(ConfigFileTest, InvalidVertexFormat)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex format element must contain 'layout' string member."
+		"foo.json: error: Vertex format element must contain 'layout' string member."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -242,7 +242,7 @@ TEST(ConfigFileTest, InvalidVertexFormat)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex format element layout 'bar' is invalid."
+		"foo.json: error: Vertex format element layout 'bar' is invalid."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -262,7 +262,7 @@ TEST(ConfigFileTest, InvalidVertexFormat)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex format element must contain 'type' string member."
+		"foo.json: error: Vertex format element must contain 'type' string member."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -283,7 +283,7 @@ TEST(ConfigFileTest, InvalidVertexFormat)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex format element type 'bar' is invalid."
+		"foo.json: error: Vertex format element type 'bar' is invalid."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -304,7 +304,7 @@ TEST(ConfigFileTest, InvalidVertexFormat)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex format element layout 'r8g8b8a8' can't be used with type 'float'."
+		"foo.json: error: Vertex format element layout 'r8g8b8a8' can't be used with type 'float'."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 }
@@ -330,7 +330,7 @@ TEST(ConfigFileTest, InvalidIndexType)
 
 	std::vector<std::string> expectedMessages =
 	{
-		"foo.json: error: index type must be a string."
+		"foo.json: error: Index type must be a string."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -352,7 +352,7 @@ TEST(ConfigFileTest, InvalidIndexType)
 
 	expectedMessages =
 	{
-		"foo.json: error: index type 'foo' is invalid."
+		"foo.json: error: Index type 'foo' is invalid."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 }
@@ -378,7 +378,7 @@ TEST(ConfigFileTest, InvalidPrimitiveType)
 
 	std::vector<std::string> expectedMessages =
 	{
-		"foo.json: error: primitive type must be a string."
+		"foo.json: error: Primitive type must be a string."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -400,7 +400,7 @@ TEST(ConfigFileTest, InvalidPrimitiveType)
 
 	expectedMessages =
 	{
-		"foo.json: error: primitive type 'foo' is invalid."
+		"foo.json: error: Primitive type 'foo' is invalid."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -422,7 +422,7 @@ TEST(ConfigFileTest, InvalidPrimitiveType)
 
 	expectedMessages =
 	{
-		"foo.json: error: root must contain 'patchPoints' int member."
+		"foo.json: error: Root must contain 'patchPoints' int member."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -445,7 +445,7 @@ TEST(ConfigFileTest, InvalidPrimitiveType)
 
 	expectedMessages =
 	{
-		"foo.json: error: root must contain 'patchPoints' int member."
+		"foo.json: error: Root must contain 'patchPoints' int member."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -468,7 +468,7 @@ TEST(ConfigFileTest, InvalidPrimitiveType)
 
 	expectedMessages =
 	{
-		"foo.json: error: patch points must have a value > 0."
+		"foo.json: error: Patch points must have a value > 0."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 }
@@ -494,7 +494,7 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	std::vector<std::string> expectedMessages =
 	{
-		"foo.json: error: root must contain 'vertexStreams' member."
+		"foo.json: error: Root must contain 'vertexStreams' member."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -517,7 +517,7 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex streams must be an array."
+		"foo.json: error: Vertex streams must be an array."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -540,7 +540,7 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex stream element must be an object."
+		"foo.json: error: Vertex stream element must be an object."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -563,7 +563,7 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex stream element must contain 'vertexFormat' member."
+		"foo.json: error: Vertex stream element must contain 'vertexFormat' member."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -590,7 +590,7 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex format must be an array."
+		"foo.json: error: Vertex format must be an array."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -623,7 +623,7 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex stream element must contain 'vertexData' string member."
+		"foo.json: error: Vertex stream element must contain 'vertexData' string member."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -657,7 +657,7 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex stream element must contain 'vertexData' string member."
+		"foo.json: error: Vertex stream element must contain 'vertexData' string member."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -692,7 +692,7 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	expectedMessages =
 	{
-		"foo.json: error: index type 'uint8' is invalid."
+		"foo.json: error: Index type 'uint8' is invalid."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -727,7 +727,7 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex stream element must contain 'indexData' string member."
+		"foo.json: error: Vertex stream element must contain 'indexData' string member."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -763,7 +763,7 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex stream element must contain 'indexData' string member."
+		"foo.json: error: Vertex stream element must contain 'indexData' string member."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 }
@@ -804,7 +804,7 @@ TEST(ConfigFileTest, InvalidVertexTransform)
 
 	std::vector<std::string> expectedMessages =
 	{
-		"foo.json: error: vertex transforms must be an array."
+		"foo.json: error: Vertex transforms must be an array."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -841,7 +841,7 @@ TEST(ConfigFileTest, InvalidVertexTransform)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex transform element must be an object."
+		"foo.json: error: Vertex transform element must be an object."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -878,7 +878,7 @@ TEST(ConfigFileTest, InvalidVertexTransform)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex transform element must contain 'name' string member."
+		"foo.json: error: Vertex transform element must contain 'name' string member."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -919,7 +919,7 @@ TEST(ConfigFileTest, InvalidVertexTransform)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex transform element must contain 'name' string member."
+		"foo.json: error: Vertex transform element must contain 'name' string member."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -960,7 +960,7 @@ TEST(ConfigFileTest, InvalidVertexTransform)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex transform element must contain 'transform' string member."
+		"foo.json: error: Vertex transform element must contain 'transform' string member."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -1002,7 +1002,7 @@ TEST(ConfigFileTest, InvalidVertexTransform)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex transform element must contain 'transform' string member."
+		"foo.json: error: Vertex transform element must contain 'transform' string member."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -1044,7 +1044,7 @@ TEST(ConfigFileTest, InvalidVertexTransform)
 
 	expectedMessages =
 	{
-		"foo.json: error: vertex transform 'bar' is invalid."
+		"foo.json: error: Vertex transform 'bar' is invalid."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 }

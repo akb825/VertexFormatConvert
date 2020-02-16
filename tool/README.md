@@ -90,6 +90,8 @@ The general output is printed to stdout as JSON with the following layout:
 	- `layout`: The data layout of the element.
 	- `type`: The data type of the element.
 	- `offset`: The offset in bytes from the start of the vertex to the element.
+	- `minValue`: The minimum vertex value for this element as 4-element array.
+	- `maxValue`: The maximum vertex value for this element as 4-element array.
 - `vertexStride`: The size in bytes of each vertex.
 - `vertexCount`: The number of vertices that were output.
 - `vertexData`: The path to a data file containing the output vertices.

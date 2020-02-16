@@ -3,3 +3,7 @@
 .vscode
 *.swp
 *.user
+
+# Files/directories for tool functional test.
+/tool/test/functional/output
+/tool/test/functional/run-output.json

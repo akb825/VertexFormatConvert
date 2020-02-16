@@ -107,6 +107,8 @@ void printHelp(const char* argv0)
 	std::printf("  - layout: The data layout of the element.\n");
 	std::printf("  - type: The data type of the element.\n");
 	std::printf("  - offset: The offset in bytes from the start of the vertex to the element.\n");
+	std::printf("  - minValue: The minimum vertex value for this element as 4-element array.\n");
+	std::printf("  - maxValue: The maximum vertex value for this element as 4-element array.\n");
 	std::printf("- vertexStride: The size in bytes of each vertex.\n");
 	std::printf("- vertexCount: The number of vertices that were output.\n");
 	std::printf("- vertexData: The path to a data file containing the output vertices.\n");
@@ -125,6 +127,9 @@ void printHelp(const char* argv0)
 bool mkdirRecursive(const std::string& directory)
 {
 	std::string parentDir = path::getParentDirectory(directory);
+	if (parentDir == directory)
+		return true;
+
 	if (!parentDir.empty() && !mkdirRecursive(parentDir))
 		return false;
 
@@ -138,7 +143,7 @@ bool loadFile(std::vector<std::uint8_t>& outData, const std::string& fileName)
 		return false;
 
 	outData.insert(outData.end(), std::istreambuf_iterator<char>(stream), {});
-	return stream.eof();
+	return stream.good() || stream.eof();
 }
 
 bool setupConverter(vfc::Converter& converter, const ConfigFile& configFile,
@@ -151,7 +156,7 @@ bool setupConverter(vfc::Converter& converter, const ConfigFile& configFile,
 		std::string vertexDataPath = path::join(configFileDir, vertexStream.vertexData);
 		if (!loadFile(vertexData, vertexDataPath))
 		{
-			std::fprintf(stderr, "%s: error: couldn't read vertex data file '%s'.\n",
+			std::fprintf(stderr, "%s: error: Couldn't read vertex data file '%s'.\n",
 				configFilePath.c_str(), vertexDataPath.c_str());
 			return false;
 		}
@@ -159,7 +164,7 @@ bool setupConverter(vfc::Converter& converter, const ConfigFile& configFile,
 		if (vertexData.size() % vertexStream.vertexFormat.stride() != 0)
 		{
 			std::fprintf(stderr,
-				"%s: error: vertex data '%s' isn't divisible by the vertex format size.\n",
+				"%s: error: Vertex data '%s' isn't divisible by the vertex format size.\n",
 				configFilePath.c_str(), vertexDataPath.c_str());
 			return false;
 		}
@@ -171,16 +176,16 @@ bool setupConverter(vfc::Converter& converter, const ConfigFile& configFile,
 			std::string indexDataPath = path::join(configFileDir, vertexStream.indexData);
 			if (!loadFile(indexData, indexDataPath))
 			{
-				std::fprintf(stderr, "%s: error: couldn't read index data file '%s'.\n",
+				std::fprintf(stderr, "%s: error: Couldn't read index data file '%s'.\n",
 					configFilePath.c_str(), vertexDataPath.c_str());
 				return false;
 			}
 
-			unsigned int indexSize = vfc::indexSize(vertexStream.indexType);
+			indexSize = vfc::indexSize(vertexStream.indexType);
 			if (vertexData.size() % indexSize != 0)
 			{
 				std::fprintf(stderr,
-					"%s: error: index data '%s' isn't divisible by the index format size.\n",
+					"%s: error: Index data '%s' isn't divisible by the index format size.\n",
 					configFilePath.c_str(), indexDataPath.c_str());
 				return false;
 			}
@@ -205,7 +210,7 @@ bool setupConverter(vfc::Converter& converter, const ConfigFile& configFile,
 		if (!converter.setElementTransform(transform.first, transform.second))
 		{
 			std::fprintf(stderr,
-				"%s: error: no vertex element '%s' found for vertex format.\n",
+				"%s: error: No vertex element '%s' found for vertex format.\n",
 				configFilePath.c_str(), transform.first.c_str());
 			return false;
 		}
@@ -231,10 +236,15 @@ std::string writeOutput(const vfc::Converter& converter, const std::string& outp
 	const std::vector<std::uint8_t>& vertices = converter.getVertices();
 	if (!writeFile(vertices.data(), vertices.size(), vertexDataPath))
 	{
-		std::fprintf(stderr, "error: couldn't write vertex output file '%s'.\n",
+		std::fprintf(stderr, "error: Couldn't write vertex output file '%s'.\n",
 			vertexDataPath.c_str());
 		return "";
 	}
+
+	const vfc::VertexFormat& vertexFormat = converter.getVertexFormat();
+	std::vector<Bounds> bounds(vertexFormat.size());
+	for (std::size_t i = 0; i < vertexFormat.size(); ++i)
+		converter.getVertexElementBounds(bounds[i].min, bounds[i].max, i);
 
 	std::vector<IndexFileData> indexFileData;
 	std::vector<std::string> names;
@@ -251,7 +261,7 @@ std::string writeOutput(const vfc::Converter& converter, const std::string& outp
 			static_cast<std::size_t>(indexData.count)*vfc::indexSize(indexData.type);
 		if (!writeFile(indexData.data, indexSize, indexDataPath))
 		{
-			std::fprintf(stderr, "error: couldn't write index output file '%s'.\n",
+			std::fprintf(stderr, "error: Couldn't write index output file '%s'.\n",
 				indexDataPath.c_str());
 			return "";
 		}
@@ -261,7 +271,7 @@ std::string writeOutput(const vfc::Converter& converter, const std::string& outp
 		names.push_back(std::move(indexDataPath));
 	}
 
-	return resultFile(converter.getVertexFormat(), converter.getVertexCount(),
+	return resultFile(converter.getVertexFormat(), bounds.data(), converter.getVertexCount(),
 		vertexDataPath.c_str(), converter.getIndexType(), indexFileData.data(),
 		indexFileData.size());
 }
@@ -305,14 +315,14 @@ int main(int argc, const char** argv)
 		}
 		else
 		{
-			std::fprintf(stderr, "error: unknown argument '%s'.\n", argv[i]);
+			std::fprintf(stderr, "error: Unknown argument '%s'.\n", argv[i]);
 			return 1;
 		}
 	}
 
 	if (output.empty())
 	{
-		std::fprintf(stderr, "error: required command-line option --output not provided.\n");
+		std::fprintf(stderr, "error: Required command-line option --output not provided.\n");
 		return 1;
 	}
 
@@ -333,14 +343,18 @@ int main(int argc, const char** argv)
 		return 1;
 
 	vfc::Converter converter(configFile.getVertexFormat(), configFile.getIndexType(),
-		configFile.getPrimitiveType(), configFile.getPatchPoints());
+		configFile.getPrimitiveType(), configFile.getPatchPoints(),
+		[&input](const char* message)
+		{
+			std::fprintf(stderr, "%s: error: %s\n", input.c_str(), message);
+		});
 	std::vector<std::vector<std::uint8_t>> storage;
 	if (!converter || !setupConverter(converter, configFile, input, configFileDir, storage))
 		return 1;
 
 	if (!mkdirRecursive(output))
 	{
-		std::fprintf(stderr, "error: couldn't create output path '%s'.\n", output.c_str());
+		std::fprintf(stderr, "error: Couldn't create output path '%s'.\n", output.c_str());
 		return 1;
 	}
 

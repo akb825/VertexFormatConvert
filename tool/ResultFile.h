@@ -17,8 +17,9 @@
 #pragma once
 
 #include <VFC/Config.h>
-#include <VFC/VertexFormat.h>
 #include <VFC/IndexData.h>
+#include <VFC/VertexFormat.h>
+#include <VFC/VertexValue.h>
 
 struct IndexFileData
 {
@@ -27,6 +28,12 @@ struct IndexFileData
 	const char* dataFile;
 };
 
-std::string resultFile(const vfc::VertexFormat& vertexFormat, std::uint32_t vertexCount,
-	const char* vertexData, vfc::IndexType indexType, const IndexFileData* indexData,
-	std::size_t indexDataCount);
+struct Bounds
+{
+	vfc::VertexValue min;
+	vfc::VertexValue max;
+};
+
+std::string resultFile(const vfc::VertexFormat& vertexFormat, const Bounds* bounds,
+	std::uint32_t vertexCount, const char* vertexData, vfc::IndexType indexType,
+	const IndexFileData* indexData, std::size_t indexDataCount);
