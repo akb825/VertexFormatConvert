@@ -76,7 +76,7 @@ function(vfc_install_library)
 		RUNTIME DESTINATION bin
 		INCLUDES DESTINATION include)
 	install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION include COMPONENT dev)
-	install(FILES ${exportPath} DESTINATION include/cuttlefish COMPONENT dev)
+	install(FILES ${exportPath} DESTINATION include/VFC COMPONENT dev)
 
 	include(CMakePackageConfigHelpers)
 	set(versionPath ${VFC_EXPORTS_DIR}/${moduleName}ConfigVersion.cmake)
