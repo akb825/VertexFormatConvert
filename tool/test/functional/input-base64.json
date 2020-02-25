@@ -1,0 +1,45 @@
+{
+	"vertexFormat":
+	[
+		{
+			"name": "position",
+			"layout": "X16Y16",
+			"type": "float"
+		},
+		{
+			"name": "texcoord",
+			"layout": "X16Y16",
+			"type": "UNorm"
+		}
+	],
+	"indexType": "UInt16",
+	"vertexStreams":
+	[
+		{
+			"vertexFormat":
+			[
+				{
+					"name": "position",
+					"layout": "X32Y32",
+					"type": "float"
+				}
+			],
+			"vertexData": "base64:AACAvwAAgL8AAIA/AACAvwAAgL8AAIA/AACAPwAAgD8=",
+			"indexType": "UInt32",
+			"indexData": "base64:AAAAAAEAAAACAAAAAgAAAAEAAAADAAAA"
+		},
+		{
+			"vertexFormat":
+			[
+				{
+					"name": "texcoord",
+					"layout": "X32Y32",
+					"type": "float"
+				}
+			],
+			"vertexData": "base64:AACAPwAAgD8AAAAAAACAPwAAgD8AAAAAAAAAAAAAAAA=",
+			"indexType": "UInt16",
+			"indexData": "base64:AwACAAEAAQACAAAA"
+		}
+	]
+}

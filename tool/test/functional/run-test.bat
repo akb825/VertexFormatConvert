@@ -16,7 +16,7 @@ if %ERRORLEVEL% neq 0 (
 
 powershell -Command "(gc '%DIR%output.json') -replace '\$OUTPUT_DIR', '%OUTPUT_DIR%'" -replace '[/\\]', '\\' > "%OUTPUT_DIR%\expected-output.json"
 
-fc /L "%DIR%\run-output.json" "%OUTPUT_DIR%\expected-output.json"
+fc /L "%OUTPUT_DIR%\expected-output.json" "%DIR%\run-output.json"
 if %ERRORLEVEL% neq 0 (
 	cd %PREV_DIR%
 	exit /B %ERRORLEVEL%

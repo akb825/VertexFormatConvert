@@ -5,7 +5,7 @@ The vfc tool provides a command-line interface for performing vertex format conv
 # Command-line options
 - `-h, --help`: Prints the help message and exits.
 - `-i, --input <file>`: Path to a JSON file that defines the input to process. If not provided, input will be read from stdin.
-- `-o, --output <dir>`: Path to a directory to output the results to. The directory will be created if it doesn't exist.
+- `-o, --output <dir>`: Path to a directory to output the results to. The directory will be created if it doesn't exist. If not provided, data will be embedded directly in the output JSON with base64 encoding.
 
 # Input
 
@@ -20,9 +20,9 @@ The primary input is in the form of a JSON configuration. The file has the follo
 - `patchPoints`: (required for PatchList primitive type) The number of patch points when the primitive type is PatchList.
 - `vertexStreams`: The input vertex streams to read data from. It is an array of objects with the following members:
 	- `vertexFormat`: The vertex format of the vertex stream. See the above vertexFormat layout description for details.
-	- `vertexData`: The path to a data file containing the vertex data.
+	- `vertexData`: The path to a data file or base64 encoded vertex data.
 	- `indexType`: (optional) The type of the input index data. If not provided or null, index data isn't used.
-	- `indexData`: (required if indexType is set) The path to a data file containing the index data.
+	- `indexData`: (required if indexType is set) The path to a data file or base64 encoded index data.
 - `vertexTransforms`: (optional) The transforms to apply to vertex data on conversion. It is an array of objects with the following members:
 	- `name`: The name of the element.
 	- `transform`: The transform to apply (described below).
@@ -32,6 +32,7 @@ The primary input is in the form of a JSON configuration. The file has the follo
 - Names for enums (e.g. layout, type) are case-insensitive. However, names provided by 'name' elements are case sensitive when matching with each-other.
 - File paths may either be absolute or relative to the input json file. When with stdin, the current working directory is used for relative paths.
 - Data files are binary files that contain the raw data as described by the vertex format for index type. The size is expected to match exactly the vertex or index type multiplied by the number of elements.
+- If the vertexData or indexData string starts with 'base64:', the rest of the string is the base64-encoded data rather than a path to a file.
 
 ## Supported vertex layouts
 
@@ -94,11 +95,11 @@ The general output is printed to stdout as JSON with the following layout:
 	- `maxValue`: The maximum vertex value for this element as 4-element array.
 - `vertexStride`: The size in bytes of each vertex.
 - `vertexCount`: The number of vertices that were output.
-- `vertexData`: The path to a data file containing the output vertices.
+- `vertexData`: The path to a data file or base64 encoded output vertices.
 - `indexType`: (set if indexType was set on input) The type of the index data.
 - `indexBuffers`: (set if indexType was set on input) The index buffers that were output. It is an array of objects with the following elements:
 	- `indexCount`: The number of indices for this buffer.
 	- `baseVertex`: The value to add to each index value to get the final vertex index. This can be applied when drawing the mesh.
-	- `indexData`: The path to a data file containing the output indices.
+	- `indexData`: The path to a data file or base 64 encoded output indices.
 
 All output files are placed in the directory provided by the --output command-line option.

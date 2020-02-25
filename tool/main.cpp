@@ -16,6 +16,7 @@
 
 #include <VFC/Converter.h>
 
+#include "Base64.h"
 #include "ConfigFile.h"
 #include "Path.h"
 #include "ResultFile.h"
@@ -30,7 +31,11 @@
 
 #if VFC_WINDOWS
 #include <direct.h>
+#include <string.h>
 #define mkdir(path, mode) _mkdir(path)
+#define strncasecmp(x, y, n) _strnicmp(x, y, n)
+#else
+#include <string.h>
 #endif
 
 void printHelp(const char* argv0)
@@ -43,7 +48,9 @@ void printHelp(const char* argv0)
 	std::printf("-i, --input <file>  Path to a JSON file that defines the input to process. If\n");
 	std::printf("                    not provided, input will be read from stdin.\n");
 	std::printf("-o, --output <dir>  Path to a directory to output the results to. The directory\n");
-	std::printf("                    will be created if it doesn't exist.\n");
+	std::printf("                    will be created if it doesn't exist. If not provided, data\n");
+	std::printf("                    will be embedded directly in the output JSON with base64\n");
+	std::printf("                    encoding.\n");
 
 	std::printf("\nInput:\n");
 	std::printf("The primary input is in the form of a JSON configuration. The file has the\n");
@@ -63,11 +70,11 @@ void printHelp(const char* argv0)
 	std::printf("  objects with the following members:\n");
 	std::printf("  - vertexFormat: The vertex format of the vertex stream. See the above\n");
 	std::printf("    vertexFormat layout description for details.\n");
-	std::printf("  - vertexData: The path to a data file containing the vertex data.\n");
+	std::printf("  - vertexData: The path to a data file or base64 encoded vertex data.\n");
 	std::printf("  - indexType: (optional) The type of the input index data. If not provided or\n");
 	std::printf("    null, index data isn't used.\n");
-	std::printf("  - indexData: (required if indexType is set) The path to a data file containing\n");
-	std::printf("    the index data.\n");
+	std::printf("  - indexData: (required if indexType is set) The path to a data file or base64\n");
+	std::printf("    encoded index data.\n");
 	std::printf("- vertexTransforms: (optional) The transforms to apply to vertex data on\n");
 	std::printf("  conversion. It is an array of objects with the following members:\n");
 	std::printf("  - name: The name of the element.\n");
@@ -81,6 +88,8 @@ void printHelp(const char* argv0)
 	std::printf("- Data files are binary files that contain the raw data as described by the\n");
 	std::printf("  vertex format for index type. The size is expected to match exactly the vertex\n");
 	std::printf("  or index type multiplied by the number of elements.\n");
+	std::printf("- If the vertexData or indexData string starts with 'base64:', the rest of the\n");
+	std::printf("  string is the base64-encoded data rather than a path to a file.\n");
 
 	std::printf("\nSupported vertex layouts:\n");
 	for (unsigned int i = 0; i < vfc::elementLayoutCount; ++i)
@@ -111,14 +120,14 @@ void printHelp(const char* argv0)
 	std::printf("  - maxValue: The maximum vertex value for this element as 4-element array.\n");
 	std::printf("- vertexStride: The size in bytes of each vertex.\n");
 	std::printf("- vertexCount: The number of vertices that were output.\n");
-	std::printf("- vertexData: The path to a data file containing the output vertices.\n");
+	std::printf("- vertexData: The path to a data file or base64 encoded output vertices.\n");
 	std::printf("- indexType: (set if indexType was set on input) The type of the index data.\n");
 	std::printf("- indexBuffers: (set if indexType was set on input) The index buffers that were\n");
 	std::printf("  output. It is an array of objects with the following elements:\n");
 	std::printf("  - indexCount: The number of indices for this buffer.\n");
 	std::printf("  - baseVertex: The value to add to each index value to get the final vertex\n");
 	std::printf("    index. This can be applied when drawing the mesh.\n");
-	std::printf("  - indexData: The path to a data file containing the output indices.\n");
+	std::printf("  - indexData: The path to a data file or base 64 encoded output indices.\n");
 
 	std::printf("\nAll output files are placed in the directory provided by the --output command-\n");
 	std::printf("line option.\n");
@@ -136,14 +145,44 @@ bool mkdirRecursive(const std::string& directory)
 	return mkdir(directory.c_str(), 0755) == 0 || errno == EEXIST;
 }
 
-bool loadFile(std::vector<std::uint8_t>& outData, const std::string& fileName)
+const char* base64EncodedString(const std::string& dataStr)
 {
-	std::ifstream stream(fileName, std::ios_base::in | std::ios_base::binary);
-	if (!stream.is_open())
-		return false;
+	const char* prefix = "base64:";
+	const std::size_t prefixLen = 7;
+	const char* dataCStr = dataStr.c_str();
+	if (strncasecmp(dataCStr, prefix, prefixLen) != 0)
+		return nullptr;
 
-	outData.insert(outData.end(), std::istreambuf_iterator<char>(stream), {});
-	return stream.good() || stream.eof();
+	return dataCStr + prefixLen;
+}
+
+bool loadData(std::vector<std::uint8_t>& outData,  const std::string& configFilePath,
+	const std::string& configFileDir, const std::string& dataStr, const char* dataType)
+{
+	const char* base64Str = base64EncodedString(dataStr);
+	if (base64Str)
+	{
+		if (!base64::decode(outData, base64Str))
+		{
+			std::fprintf(stderr, "%s: error: Invalid base64 encoding for %s data.\n",
+				configFilePath.c_str(), dataType);
+			return false;
+		}
+		return true;
+	}
+
+	std::string dataFilePath = path::join(configFileDir, dataStr);
+	std::ifstream stream(dataFilePath, std::ios_base::in | std::ios_base::binary);
+	if (stream.is_open())
+	{
+		outData.insert(outData.end(), std::istreambuf_iterator<char>(stream), {});
+		if (stream.good() || stream.eof())
+			return true;
+	}
+
+	std::fprintf(stderr, "%s: error: Couldn't read %s data file '%s'.\n",
+		configFilePath.c_str(), dataType, dataFilePath.c_str());
+	return false;
 }
 
 bool setupConverter(vfc::Converter& converter, const ConfigFile& configFile,
@@ -153,19 +192,14 @@ bool setupConverter(vfc::Converter& converter, const ConfigFile& configFile,
 	for (const ConfigFile::VertexStream& vertexStream : configFile.getVertexStreams())
 	{
 		std::vector<std::uint8_t> vertexData;
-		std::string vertexDataPath = path::join(configFileDir, vertexStream.vertexData);
-		if (!loadFile(vertexData, vertexDataPath))
-		{
-			std::fprintf(stderr, "%s: error: Couldn't read vertex data file '%s'.\n",
-				configFilePath.c_str(), vertexDataPath.c_str());
+		if (!loadData(vertexData, configFilePath, configFileDir, vertexStream.vertexData, "vertex"))
 			return false;
-		}
 
 		if (vertexData.size() % vertexStream.vertexFormat.stride() != 0)
 		{
 			std::fprintf(stderr,
-				"%s: error: Vertex data '%s' isn't divisible by the vertex format size.\n",
-				configFilePath.c_str(), vertexDataPath.c_str());
+				"%s: error: Vertex data isn't divisible by the vertex format size.\n",
+				configFilePath.c_str());
 			return false;
 		}
 
@@ -173,20 +207,18 @@ bool setupConverter(vfc::Converter& converter, const ConfigFile& configFile,
 		unsigned int indexSize = 1; // Avoid divide by 0 when no indices.
 		if (vertexStream.indexType != vfc::IndexType::NoIndices)
 		{
-			std::string indexDataPath = path::join(configFileDir, vertexStream.indexData);
-			if (!loadFile(indexData, indexDataPath))
+			if (!loadData(
+					indexData, configFilePath, configFileDir, vertexStream.indexData, "index"))
 			{
-				std::fprintf(stderr, "%s: error: Couldn't read index data file '%s'.\n",
-					configFilePath.c_str(), vertexDataPath.c_str());
 				return false;
 			}
 
 			indexSize = vfc::indexSize(vertexStream.indexType);
-			if (vertexData.size() % indexSize != 0)
+			if (indexData.size() % indexSize != 0)
 			{
 				std::fprintf(stderr,
-					"%s: error: Index data '%s' isn't divisible by the index format size.\n",
-					configFilePath.c_str(), indexDataPath.c_str());
+					"%s: error: Index data isn't divisible by the index format size.\n",
+					configFilePath.c_str());
 				return false;
 			}
 		}
@@ -232,13 +264,22 @@ bool writeFile(const void* data, std::size_t size, const std::string& fileName)
 
 std::string writeOutput(const vfc::Converter& converter, const std::string& outputDir)
 {
-	std::string vertexDataPath = path::join(outputDir, "vertices.dat");
 	const std::vector<std::uint8_t>& vertices = converter.getVertices();
-	if (!writeFile(vertices.data(), vertices.size(), vertexDataPath))
+	std::string vertexData;
+	if (outputDir.empty())
 	{
-		std::fprintf(stderr, "error: Couldn't write vertex output file '%s'.\n",
-			vertexDataPath.c_str());
-		return "";
+		vertexData = "base64:";
+		vertexData.append(base64::encode(vertices.data(), vertices.size()));
+	}
+	else
+	{
+		vertexData = path::join(outputDir, "vertices.dat");
+		if (!writeFile(vertices.data(), vertices.size(), vertexData))
+		{
+			std::fprintf(stderr, "error: Couldn't write vertex output file '%s'.\n",
+				vertexData.c_str());
+			return "";
+		}
 	}
 
 	const vfc::VertexFormat& vertexFormat = converter.getVertexFormat();
@@ -247,32 +288,48 @@ std::string writeOutput(const vfc::Converter& converter, const std::string& outp
 		converter.getVertexElementBounds(bounds[i].min, bounds[i].max, i);
 
 	std::vector<IndexFileData> indexFileData;
-	std::vector<std::string> names;
+	std::vector<std::string> indexStrings;
 	indexFileData.reserve(converter.getIndices().size());
-	names.reserve(indexFileData.size());
-	std::string fileName;
-	for (const vfc::IndexData& indexData : converter.getIndices())
+	indexStrings.reserve(indexFileData.size());
+	if (outputDir.empty())
 	{
-		fileName = "indices.";
-		fileName += std::to_string(indexFileData.size());
-		fileName += ".dat";
-		std::string indexDataPath = path::join(outputDir, fileName);
-		std::size_t indexSize =
-			static_cast<std::size_t>(indexData.count)*vfc::indexSize(indexData.type);
-		if (!writeFile(indexData.data, indexSize, indexDataPath))
+		for (const vfc::IndexData& indexData : converter.getIndices())
 		{
-			std::fprintf(stderr, "error: Couldn't write index output file '%s'.\n",
-				indexDataPath.c_str());
-			return "";
+			std::size_t indexSize =
+				static_cast<std::size_t>(indexData.count)*vfc::indexSize(indexData.type);
+			std::string encodedData = "base64:";
+			encodedData.append(base64::encode(indexData.data, indexSize));
+			indexFileData.push_back(
+				IndexFileData{indexData.count, indexData.baseVertex, encodedData.c_str()});
+			indexStrings.push_back(std::move(encodedData));
 		}
+	}
+	else
+	{
+		std::string fileName;
+		for (const vfc::IndexData& indexData : converter.getIndices())
+		{
+			fileName = "indices.";
+			fileName += std::to_string(indexFileData.size());
+			fileName += ".dat";
+			std::string indexDataPath = path::join(outputDir, fileName);
+			std::size_t indexSize =
+				static_cast<std::size_t>(indexData.count)*vfc::indexSize(indexData.type);
+			if (!writeFile(indexData.data, indexSize, indexDataPath))
+			{
+				std::fprintf(stderr, "error: Couldn't write index output file '%s'.\n",
+					indexDataPath.c_str());
+				return "";
+			}
 
-		indexFileData.push_back(
-			IndexFileData{indexData.count, indexData.baseVertex, indexDataPath.c_str()});
-		names.push_back(std::move(indexDataPath));
+			indexFileData.push_back(
+				IndexFileData{indexData.count, indexData.baseVertex, indexDataPath.c_str()});
+			indexStrings.push_back(std::move(indexDataPath));
+		}
 	}
 
 	return resultFile(converter.getVertexFormat(), bounds.data(), converter.getVertexCount(),
-		vertexDataPath.c_str(), converter.getIndexType(), indexFileData.data(),
+		vertexData.c_str(), converter.getIndexType(), indexFileData.data(),
 		indexFileData.size());
 }
 
@@ -320,12 +377,6 @@ int main(int argc, const char** argv)
 		}
 	}
 
-	if (output.empty())
-	{
-		std::fprintf(stderr, "error: Required command-line option --output not provided.\n");
-		return 1;
-	}
-
 	ConfigFile configFile;
 	std::string configFileDir;
 	bool configLoadResult = false;
@@ -352,7 +403,10 @@ int main(int argc, const char** argv)
 	if (!converter || !setupConverter(converter, configFile, input, configFileDir, storage))
 		return 1;
 
-	if (!mkdirRecursive(output))
+	// Config file can contain base64 data, so clear out memory.
+	configFile = ConfigFile();
+
+	if (!output.empty() && !mkdirRecursive(output))
 	{
 		std::fprintf(stderr, "error: Couldn't create output path '%s'.\n", output.c_str());
 		return 1;
