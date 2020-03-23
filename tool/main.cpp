@@ -108,6 +108,12 @@ void printHelp(const char* argv0)
 	for (unsigned int i = 0; i < vfc::primitiveTypeCount; ++i)
 		std::printf("- %s\n", vfc::primitiveTypeName(static_cast<vfc::PrimitiveType>(i)));
 
+	std::printf("\nSupported transforms:\n");
+	std::printf("- Identity: leaves the values un-transformed.\n");
+	std::printf("- Bounds: normalizes the values based on the original value's bounds\n");
+	std::printf("- UNormToSNorm: converts UNorm values to SNorm values.\n");
+	std::printf("- SNormToUNorm: converts SNorm values to UNorm values.\n");
+
 	std::printf("\nOutput:\n");
 	std::printf("The general output is printed to stdout as JSON with the following layout:\n");
 	std::printf("- vertexFormat: The verex format that was output. It is an array of objects with\n");

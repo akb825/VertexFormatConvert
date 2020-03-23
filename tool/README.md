@@ -82,6 +82,13 @@ Note: RGBA may also be used in place of XYZW.
 - TriangleFan
 - PatchList
 
+## Supported transforms
+
+- Identity: leaves the values un-transformed.
+- Bounds: normalizes the values based on the original value's bounds
+- UNormToSNorm: converts UNorm values to SNorm values.
+- SNormToUNorm: converts SNorm values to UNorm values.
+
 # Output
 
 The general output is printed to stdout as JSON with the following layout:
