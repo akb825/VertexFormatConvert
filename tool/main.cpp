@@ -341,12 +341,6 @@ std::string writeOutput(const vfc::Converter& converter, const std::string& outp
 
 int main(int argc, const char** argv)
 {
-	if (argc == 1)
-	{
-		printHelp(argv[0]);
-		return 1;
-	}
-
 	std::string input;
 	std::string output;
 	for (int i = 1; i < argc; ++i)
