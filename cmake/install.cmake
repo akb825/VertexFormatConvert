@@ -44,26 +44,12 @@ function(vfc_install_library)
 	if (VFC_SHARED)
 		if (MSVC)
 			set_property(TARGET ${ARGS_TARGET} APPEND PROPERTY COMPILE_DEFINITIONS VFC_BUILD)
-			file(WRITE ${exportPath}
-				"#pragma once\n\n"
-				"#ifdef VFC_BUILD\n"
-				"#define VFC_EXPORT __declspec(dllexport)\n"
-				"#else\n"
-				"#define VFC_EXPORT __declspec(dllimport)\n"
-				"#endif\n")
-		elseif (CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-			file(WRITE ${exportPath}
-				"#pragma once\n\n"
-				"#define VFC_EXPORT __attribute__((visibility(\"default\")))\n")
+			configure_file(${VFC_SOURCE_DIR}/cmake/templates/WindowsExport.h ${exportPath} COPYONLY)
 		else()
-			file(WRITE ${exportPath}
-				"#pragma once\n\n"
-				"#define VFC_EXPORT\n")
+			configure_file(${VFC_SOURCE_DIR}/cmake/templates/UnixExport.h ${exportPath} COPYONLY)
 		endif()
 	else()
-		file(WRITE ${exportPath}
-			"#pragma once\n\n"
-			"#define VFC_EXPORT\n")
+		configure_file(${VFC_SOURCE_DIR}/cmake/templates/NoExport.h ${exportPath} COPYONLY)
 	endif()
 
 	if (NOT VFC_INSTALL)
