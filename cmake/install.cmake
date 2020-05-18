@@ -75,7 +75,6 @@ function(vfc_install_library)
 
 	set(configPath ${VFC_EXPORTS_DIR}/${moduleName}Config.cmake)
 	file(WRITE ${configPath}
-		"${dependencies}\n"
 		"include(\${CMAKE_CURRENT_LIST_DIR}/${moduleName}Targets.cmake)\n"
 		"set(${moduleName}_LIBRARIES ${ARGS_TARGET})\n"
 		"get_target_property(${moduleName}_INCLUDE_DIRS ${ARGS_TARGET} INTERFACE_INCLUDE_DIRECTORIES)\n")
