@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Aaron Barany
+ * Copyright 2020-2021 Aaron Barany
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,6 +97,40 @@ public:
 		unsigned int patchPoints, std::uint32_t maxIndexValue,
 		ErrorFunction errorFunction = &stderrErrorFunction);
 
+	/**
+	 * @brief Constructs the converter with information for what to convert to.
+	 *
+	 * This uses the default maximum index value.
+	 *
+	 * @param vertexFormat The vertex format to convert to. This has multiple formats used to
+	 *     populate multiple output streams.
+	 * @param indexType The index type to convert to.
+	 * @param primitiveType The primitive type for the geometry. This is used to guarantee
+	 *     correctness if multiple index buffers are created due to exceeding the maximum index
+	 *     value.
+	 * @param patchPoints The number of points when primitiveType is PrimitiveType::PatchList.
+	 * @param errorFunction Function to report error messages.
+	 */
+	Converter(std::vector<VertexFormat> vertexFormat, IndexType indexType,
+		PrimitiveType primitiveType, unsigned int patchPoints = 0,
+		ErrorFunction errorFunction = &stderrErrorFunction);
+
+	/**
+	 * @brief Constructs the converter with information for what to convert to.
+	 * @param vertexFormat The vertex format to convert to. This has multiple formats used to
+	 *     populate multiple output streams.
+	 * @param indexType The index type to convert to.
+	 * @param primitiveType The primitive type for the geometry. This is used to guarantee
+	 *     correctness if multiple index buffers are created due to exceeding the maximum index
+	 *     value.
+	 * @param patchPoints The number of points when primitiveType is PrimitiveType::PatchList.
+	 * @param maxIndexValue The maximum index value to use.
+	 * @param errorFunction Function to report error messages.
+	 */
+	Converter(std::vector<VertexFormat> vertexFormat, IndexType indexType,
+		PrimitiveType primitiveType, unsigned int patchPoints, std::uint32_t maxIndexValue,
+		ErrorFunction errorFunction = &stderrErrorFunction);
+
 	Converter(const Converter& other) = delete;
 	Converter& operator=(const Converter& other) = delete;
 
@@ -135,7 +169,7 @@ public:
 	 * @brief Gets the vertex format to convert to.
 	 * @return The vertex format.
 	 */
-	const VertexFormat& getVertexFormat() const
+	const std::vector<VertexFormat>& getVertexFormat() const
 	{
 		return m_vertexFormat;
 	}
@@ -178,13 +212,15 @@ public:
 
 	/**
 	 * @brief Gets the transform for a vertex element by index.
-	 * @param i The index for the element.
+	 * @param stream The index of the vertex stream. (i.e. which vertex format in the vector)
+	 * @param element The index of the vertex element within the vertex stream.
 	 * @return The transform.
 	 */
-	Transform getElementTransform(std::size_t i) const
+	Transform getElementTransform(std::size_t stream, std::size_t element) const
 	{
-		assert(i < m_elementMapping.size());
-		return m_elementMapping[i].transform;
+		assert(stream < m_elementMapping.size());
+		assert(element < m_elementMapping[stream].size());
+		return m_elementMapping[stream][element].transform;
 	}
 
 	/**
@@ -206,13 +242,15 @@ public:
 
 	/**
 	 * @brief Sets the transform for a vertex element by index.
-	 * @param i The index of the element.
+	 * @param stream The index of the vertex stream. (i.e. which vertex format in the vector)
+	 * @param element The index of the vertex element within the vertex stream.
 	 * @param transform The transform to set.
 	 */
-	void setElementTransform(std::size_t i, Transform transform)
+	void setElementTransform(std::size_t stream, std::size_t element, Transform transform)
 	{
-		assert(i < m_elementMapping.size());
-		m_elementMapping[i].transform = transform;
+		assert(stream < m_elementMapping.size());
+		assert(element < m_elementMapping[stream].size());
+		m_elementMapping[stream][element].transform = transform;
 	}
 
 	/**
@@ -285,13 +323,18 @@ public:
 	 *
 	 * @param[out] outMin The minimum value for the bounds.
 	 * @param[out] outMax The maximum value for the bounds.
-	 * @param i The index of the vertex element.
+	 * @param stream The index of the vertex stream. (i.e. which vertex format in the vector)
+	 * @param element The index of the vertex element within the vertex stream.
 	 */
-	void getVertexElementBounds(VertexValue& outMin, VertexValue& outMax, std::size_t i) const
+	void getVertexElementBounds(VertexValue& outMin, VertexValue& outMax, std::size_t stream,
+		std::size_t element) const
 	{
-		assert(i < m_elementMapping.size());
-		outMin = m_elementMapping[i].minVal;
-		outMax = m_elementMapping[i].maxVal;
+		assert(stream < m_elementMapping.size());
+		const std::vector<VertexElementRef>& curElementMapping = m_elementMapping[stream];
+		assert(element < curElementMapping.size());
+		const VertexElementRef& curElement = curElementMapping[element];
+		outMin = curElement.minVal;
+		outMax = curElement.maxVal;
 	}
 
 	/**
@@ -326,7 +369,7 @@ public:
 	 * @brief Gets the converted vertices.
 	 * @return The vertices as an array of bytes.
 	 */
-	const std::vector<std::uint8_t>& getVertices() const
+	const std::vector<std::vector<std::uint8_t>>& getVertices() const
 	{
 		return m_vertices;
 	}
@@ -337,7 +380,9 @@ public:
 	 */
 	std::uint32_t getVertexCount() const
 	{
-		return static_cast<std::uint32_t>(m_vertices.size()/m_vertexFormat.stride());
+		if (m_vertices.empty())
+			return 0;
+		return static_cast<std::uint32_t>(m_vertices[0].size()/m_vertexFormat[0].stride());
 	}
 
 private:
@@ -361,7 +406,7 @@ private:
 		VertexValue maxVal;
 	};
 
-	VertexFormat m_vertexFormat;
+	std::vector<VertexFormat> m_vertexFormat;
 	IndexType m_indexType;
 	PrimitiveType m_primitiveType;
 	unsigned int m_patchPoints;
@@ -369,8 +414,8 @@ private:
 	ErrorFunction m_errorFunction;
 
 	std::vector<VertexStream> m_vertexStreams;
-	std::vector<VertexElementRef> m_elementMapping;
-	std::vector<std::uint8_t> m_vertices;
+	std::vector<std::vector<VertexElementRef>> m_elementMapping;
+	std::vector<std::vector<std::uint8_t>> m_vertices;
 	std::vector<std::uint8_t> m_indices;
 	std::vector<IndexData> m_indexData;
 	std::uint32_t m_indexCount;

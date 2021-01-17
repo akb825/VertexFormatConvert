@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Aaron Barany
+ * Copyright 2020-2021 Aaron Barany
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 #include "ConfigFile.h"
 #include <gtest/gtest.h>
 
@@ -23,16 +22,20 @@ TEST(ConfigFileTest, CompleteConfig)
 	const char* json =
 		"{\n"
 		"    \"vertexFormat\": [\n"
-		"        {\n"
-		"            \"name\": \"position\",\n"
-		"            \"layout\": \"X32Y32\",\n"
-		"            \"type\": \"float\"\n"
-		"        },\n"
-		"        {\n"
-		"            \"name\": \"texCoord\",\n"
-		"            \"layout\": \"X16Y16\",\n"
-		"            \"type\": \"snorm\"\n"
-		"        }\n"
+		"        [\n"
+		"            {\n"
+		"              \"name\": \"position\",\n"
+		"              \"layout\": \"X32Y32\",\n"
+		"              \"type\": \"float\"\n"
+		"            }\n"
+		"        ],\n"
+		"        [\n"
+		"            {\n"
+		"                \"name\": \"texCoord\",\n"
+		"                \"layout\": \"X16Y16\",\n"
+		"                \"type\": \"snorm\"\n"
+		"            }\n"
+		"        ]\n"
 		"    ],\n"
 		"    \"indexType\": \"uint16\",\n"
 		"    \"primitiveType\": \"PatchList\",\n"
@@ -72,12 +75,12 @@ TEST(ConfigFileTest, CompleteConfig)
 	ConfigFile configFile;
 	ASSERT_TRUE(configFile.load(json, "foo.json"));
 
-	vfc::VertexFormat expectedVertexFormat;
+	std::vector<vfc::VertexFormat> expectedVertexFormat(2);
 	EXPECT_EQ(vfc::VertexFormat::AddResult::Succeeded,
-		expectedVertexFormat.appendElement("position", vfc::ElementLayout::X32Y32,
+		expectedVertexFormat[0].appendElement("position", vfc::ElementLayout::X32Y32,
 			vfc::ElementType::Float));
 	EXPECT_EQ(vfc::VertexFormat::AddResult::Succeeded,
-		expectedVertexFormat.appendElement("texCoord", vfc::ElementLayout::X16Y16,
+		expectedVertexFormat[1].appendElement("texCoord", vfc::ElementLayout::X16Y16,
 			vfc::ElementType::SNorm));
 	EXPECT_EQ(expectedVertexFormat, configFile.getVertexFormat());
 	EXPECT_EQ(vfc::IndexType::UInt16, configFile.getIndexType());
@@ -154,7 +157,37 @@ TEST(ConfigFileTest, InvalidVertexFormat)
 
 	expectedMessages =
 	{
-		"foo.json: error: Vertex format must be an array."
+		"foo.json: error: Vertex format must be an array of arrays."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": []"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: Vertex format is empty."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [[]]"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
+		"foo.json: error: Inner vertex format is empty."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
@@ -169,13 +202,28 @@ TEST(ConfigFileTest, InvalidVertexFormat)
 
 	expectedMessages =
 	{
+		"foo.json: error: Vertex format must be an array of arrays."
+	};
+	EXPECT_EQ(expectedMessages, messages);
+
+	json =
+		"{\n"
+		"    \"vertexFormat\": [[2]]\n"
+		"}";
+
+	messages.clear();
+	EXPECT_FALSE(configFile.load(json, "foo.json",
+		[&messages](const char* message) {messages.push_back(message);}));
+
+	expectedMessages =
+	{
 		"foo.json: error: Vertex format element must be an object."
 	};
 	EXPECT_EQ(expectedMessages, messages);
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [{}]\n"
+		"    \"vertexFormat\": [[{}]]\n"
 		"}";
 
 	messages.clear();
@@ -190,11 +238,11 @@ TEST(ConfigFileTest, InvalidVertexFormat)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": 1\n"
 		"        }\n"
-		"    ]\n"
+		"    ]]\n"
 		"}";
 
 	messages.clear();
@@ -209,11 +257,11 @@ TEST(ConfigFileTest, InvalidVertexFormat)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\"\n"
 		"        }\n"
-		"    ]\n"
+		"    ]]\n"
 		"}";
 
 	messages.clear();
@@ -228,12 +276,12 @@ TEST(ConfigFileTest, InvalidVertexFormat)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"bar\"\n"
 		"        }\n"
-		"    ]\n"
+		"    ]]\n"
 		"}";
 
 	messages.clear();
@@ -248,12 +296,12 @@ TEST(ConfigFileTest, InvalidVertexFormat)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\"\n"
 		"        }\n"
-		"    ]\n"
+		"    ]]\n"
 		"}";
 
 	messages.clear();
@@ -268,13 +316,13 @@ TEST(ConfigFileTest, InvalidVertexFormat)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"bar\"\n"
 		"        }\n"
-		"    ]\n"
+		"    ]]\n"
 		"}";
 
 	messages.clear();
@@ -289,13 +337,13 @@ TEST(ConfigFileTest, InvalidVertexFormat)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"float\"\n"
 		"        }\n"
-		"    ]\n"
+		"    ]]\n"
 		"}";
 
 	messages.clear();
@@ -313,13 +361,13 @@ TEST(ConfigFileTest, InvalidIndexType)
 {
 	const char* json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": 1\n"
 		"}";
 
@@ -336,13 +384,13 @@ TEST(ConfigFileTest, InvalidIndexType)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": \"foo\"\n"
 		"}";
 
@@ -361,13 +409,13 @@ TEST(ConfigFileTest, InvalidPrimitiveType)
 {
 	const char* json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"primitiveType\": 1\n"
 		"}";
 
@@ -384,13 +432,13 @@ TEST(ConfigFileTest, InvalidPrimitiveType)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"primitiveType\": \"foo\"\n"
 		"}";
 
@@ -406,13 +454,13 @@ TEST(ConfigFileTest, InvalidPrimitiveType)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"primitiveType\": \"PatchList\"\n"
 		"}";
 
@@ -428,13 +476,13 @@ TEST(ConfigFileTest, InvalidPrimitiveType)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"primitiveType\": \"PatchList\",\n"
 		"    \"patchPoints\": \"foo\"\n"
 		"}";
@@ -451,13 +499,13 @@ TEST(ConfigFileTest, InvalidPrimitiveType)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"primitiveType\": \"PatchList\",\n"
 		"    \"patchPoints\": 0\n"
 		"}";
@@ -477,13 +525,13 @@ TEST(ConfigFileTest, InvalidVertexStream)
 {
 	const char* json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": \"uint16\"\n"
 		"}";
 
@@ -500,13 +548,13 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": \"uint16\",\n"
 		"    \"vertexStreams\": {}\n"
 		"}";
@@ -523,13 +571,13 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": \"uint16\",\n"
 		"    \"vertexStreams\": [2]\n"
 		"}";
@@ -546,13 +594,13 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": \"uint16\",\n"
 		"    \"vertexStreams\": [{}]\n"
 		"}";
@@ -569,13 +617,13 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": \"uint16\",\n"
 		"    \"vertexStreams\": [\n"
 		"        {\n"
@@ -596,13 +644,13 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": \"uint16\",\n"
 		"    \"vertexStreams\": [\n"
 		"        {\n"
@@ -629,13 +677,13 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": \"uint16\",\n"
 		"    \"vertexStreams\": [\n"
 		"        {\n"
@@ -663,13 +711,13 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": \"uint16\",\n"
 		"    \"vertexStreams\": [\n"
 		"        {\n"
@@ -698,13 +746,13 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": \"uint16\",\n"
 		"    \"vertexStreams\": [\n"
 		"        {\n"
@@ -733,13 +781,13 @@ TEST(ConfigFileTest, InvalidVertexStream)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": \"uint16\",\n"
 		"    \"vertexStreams\": [\n"
 		"        {\n"
@@ -772,13 +820,13 @@ TEST(ConfigFileTest, InvalidVertexTransform)
 {
 	const char* json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": \"uint16\",\n"
 		"    \"vertexStreams\": [\n"
 		"        {\n"
@@ -810,13 +858,13 @@ TEST(ConfigFileTest, InvalidVertexTransform)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": \"uint16\",\n"
 		"    \"vertexStreams\": [\n"
 		"        {\n"
@@ -847,13 +895,13 @@ TEST(ConfigFileTest, InvalidVertexTransform)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": \"uint16\",\n"
 		"    \"vertexStreams\": [\n"
 		"        {\n"
@@ -884,13 +932,13 @@ TEST(ConfigFileTest, InvalidVertexTransform)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": \"uint16\",\n"
 		"    \"vertexStreams\": [\n"
 		"        {\n"
@@ -925,13 +973,13 @@ TEST(ConfigFileTest, InvalidVertexTransform)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": \"uint16\",\n"
 		"    \"vertexStreams\": [\n"
 		"        {\n"
@@ -966,13 +1014,13 @@ TEST(ConfigFileTest, InvalidVertexTransform)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": \"uint16\",\n"
 		"    \"vertexStreams\": [\n"
 		"        {\n"
@@ -1008,13 +1056,13 @@ TEST(ConfigFileTest, InvalidVertexTransform)
 
 	json =
 		"{\n"
-		"    \"vertexFormat\": [\n"
+		"    \"vertexFormat\": [[\n"
 		"        {\n"
 		"            \"name\": \"foo\",\n"
 		"            \"layout\": \"r8g8b8a8\",\n"
 		"            \"type\": \"uint\"\n"
 		"        }\n"
-		"    ],\n"
+		"    ]],\n"
 		"    \"indexType\": \"uint16\",\n"
 		"    \"vertexStreams\": [\n"
 		"        {\n"

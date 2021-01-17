@@ -11,7 +11,7 @@ The vfc tool provides a command-line interface for performing vertex format conv
 
 The primary input is in the form of a JSON configuration. The file has the following structure, with members required unless otherwise stated:
 
-- `vertexFormat`: The vertex format to convert to. It is an array of objects with the following members:
+- `vertexFormat`: The vertex format to convert to. It is a two-dimensional array of objects, where the outer array corresponds to the vertex streams and the inner array the elements within a vertex stream. Each object has the following members:
 	- `name`: The name of the element.
 	- `layout`: The data layout of the element (described below).
 	- `type`: The data type of the element (described below).
@@ -93,20 +93,21 @@ Note: RGBA may also be used in place of XYZW.
 
 The general output is printed to stdout as JSON with the following layout:
 
-- `vertexFormat`: The verex format that was output. It is an array of objects with the following members:
-	- `name`: The name of the element.
-	- `layout`: The data layout of the element.
-	- `type`: The data type of the element.
-	- `offset`: The offset in bytes from the start of the vertex to the element.
-	- `minValue`: The minimum vertex value for this element as 4-element array.
-	- `maxValue`: The maximum vertex value for this element as 4-element array.
-- `vertexStride`: The size in bytes of each vertex.
+- `vertices`: The vertex output. It is an array of objects with the following members:
+	- `vertexFormat`: The verex format that was output. It is an array of objects with the following members:
+		- `name`: The name of the element.
+		- `layout`: The data layout of the element.
+		- `type`: The data type of the element.
+		- `offset`: The offset in bytes from the start of the vertex to the element.
+		- `minValue`: The minimum vertex value for this element as 4-element array.
+		- `maxValue`: The maximum vertex value for this element as 4-element array.
+	- `vertexStride`: The size in bytes of each vertex.
+	- `vertexData`: The path to a data file or base64 encoded output vertices.
 - `vertexCount`: The number of vertices that were output.
-- `vertexData`: The path to a data file or base64 encoded output vertices.
 - `indexType`: (set if indexType was set on input) The type of the index data.
 - `indexBuffers`: (set if indexType was set on input) The index buffers that were output. It is an array of objects with the following elements:
 	- `indexCount`: The number of indices for this buffer.
 	- `baseVertex`: The value to add to each index value to get the final vertex index. This can be applied when drawing the mesh.
 	- `indexData`: The path to a data file or base 64 encoded output indices.
 
-All output files are placed in the directory provided by the --output command-line option.
+All output files are placed in the directory provided by the `--output` command-line option.

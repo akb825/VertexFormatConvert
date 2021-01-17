@@ -22,7 +22,13 @@ if %ERRORLEVEL% neq 0 (
 	exit /B %ERRORLEVEL%
 )
 
-fc /B "%DIR%\output.vertices.dat" "%OUTPUT_DIR%\vertices.dat"
+fc /B "%DIR%\output.vertices.0.dat" "%OUTPUT_DIR%\vertices.0.dat"
+if %ERRORLEVEL% neq 0 (
+	cd %PREV_DIR%
+	exit /B %ERRORLEVEL%
+)
+
+fc /B "%DIR%\output.vertices.1.dat" "%OUTPUT_DIR%\vertices.1.dat"
 if %ERRORLEVEL% neq 0 (
 	cd %PREV_DIR%
 	exit /B %ERRORLEVEL%

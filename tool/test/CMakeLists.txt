@@ -23,6 +23,7 @@ if (WIN32)
 		${vfcPath})
 else()
 	add_test(NAME VFCFunctionalTest COMMAND ${functionalTestPath}/run-test.sh ${vfcPath})
-	add_test(NAME VFCFunctionalBase64Test COMMAND ${functionalTestPath}/run-base64-test.sh ${vfcPath})
+	add_test(NAME VFCFunctionalBase64Test COMMAND ${functionalTestPath}/run-base64-test.sh
+		${vfcPath})
 endif()
 

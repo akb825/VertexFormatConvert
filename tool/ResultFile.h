@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Aaron Barany
+ * Copyright 2020-2021 Aaron Barany
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ struct Bounds
 	vfc::VertexValue max;
 };
 
-std::string resultFile(const vfc::VertexFormat& vertexFormat, const Bounds* bounds,
-	std::uint32_t vertexCount, const char* vertexData, vfc::IndexType indexType,
-	const IndexFileData* indexData, std::size_t indexDataCount);
+std::string resultFile(const std::vector<vfc::VertexFormat>& vertexFormat,
+	const std::vector<std::vector<Bounds>>& bounds, const std::vector<std::string>& vertexData,
+	std::uint32_t vertexCount, vfc::IndexType indexType,
+	const std::vector<IndexFileData>& indexData);

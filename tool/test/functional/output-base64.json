@@ -1,45 +1,55 @@
 {
-    "vertexFormat": [
+    "vertices": [
         {
-            "name": "position",
-            "layout": "X16Y16",
-            "type": "Float",
-            "offset": 0,
-            "minValue": [
-                -1.0,
-                -1.0,
-                0.0,
-                1.0
+            "vertexFormat": [
+                {
+                    "name": "position",
+                    "layout": "X16Y16",
+                    "type": "Float",
+                    "offset": 0,
+                    "minValue": [
+                        -1.0,
+                        -1.0,
+                        0.0,
+                        1.0
+                    ],
+                    "maxValue": [
+                        1.0,
+                        1.0,
+                        0.0,
+                        1.0
+                    ]
+                }
             ],
-            "maxValue": [
-                1.0,
-                1.0,
-                0.0,
-                1.0
-            ]
+            "vertexStride": 4,
+            "vertexData": "base64:ALwAvAA8ALwAvAA8ADwAPA=="
         },
         {
-            "name": "texcoord",
-            "layout": "X16Y16",
-            "type": "UNorm",
-            "offset": 4,
-            "minValue": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
+            "vertexFormat": [
+                {
+                    "name": "texcoord",
+                    "layout": "X16Y16",
+                    "type": "UNorm",
+                    "offset": 0,
+                    "minValue": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "maxValue": [
+                        1.0,
+                        1.0,
+                        0.0,
+                        1.0
+                    ]
+                }
             ],
-            "maxValue": [
-                1.0,
-                1.0,
-                0.0,
-                1.0
-            ]
+            "vertexStride": 4,
+            "vertexData": "base64:AAAAAP//AAAAAP///////w=="
         }
     ],
-    "vertexStride": 8,
     "vertexCount": 4,
-    "vertexData": "base64:ALwAvAAAAAAAPAC8//8AAAC8ADwAAP//ADwAPP////8=",
     "indexType": "UInt16",
     "indexBuffers": [
         {

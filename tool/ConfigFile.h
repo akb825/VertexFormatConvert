@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Aaron Barany
+ * Copyright 2020-2021 Aaron Barany
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ public:
 	bool load(const char* json, const char* fileName,
 		const vfc::Converter::ErrorFunction& errorFunction = &vfc::Converter::stderrErrorFunction);
 
-	const vfc::VertexFormat& getVertexFormat() const
+	const std::vector<vfc::VertexFormat>& getVertexFormat() const
 	{
 		return m_vertexFormat;
 	}
@@ -87,7 +87,7 @@ public:
 	}
 
 private:
-	vfc::VertexFormat m_vertexFormat;
+	std::vector<vfc::VertexFormat> m_vertexFormat;
 	vfc::IndexType m_indexType = vfc::IndexType::NoIndices;
 	vfc::PrimitiveType m_primitiveType = vfc::PrimitiveType::TriangleList;
 	std::uint32_t m_patchPoints = 0;

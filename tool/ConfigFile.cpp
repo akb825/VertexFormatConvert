@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Aaron Barany
+ * Copyright 2020-2021 Aaron Barany
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,13 +113,16 @@ static std::string errorMessageStart(const char* json, const char* fileName,
 }
 
 static vfc::VertexFormat readVertexFormat(const rapidjson::Value& value, const char* fileName,
-	const vfc::Converter::ErrorFunction& errorFunction)
+	const vfc::Converter::ErrorFunction& errorFunction, bool inner = false)
 {
 	vfc::VertexFormat vertexFormat;
 	if (!value.IsArray())
 	{
 		std::string message = fileName;
-		message += ": error: Vertex format must be an array.";
+		if (inner)
+			message += ": error: Vertex format must be an array of arrays.";
+		else
+			message += ": error: Vertex format must be an array.";
 		errorFunction(message.c_str());
 		return vertexFormat;
 	}
@@ -214,6 +217,60 @@ static vfc::VertexFormat readVertexFormat(const rapidjson::Value& value, const c
 			errorFunction(message.c_str());
 			vertexFormat.clear();
 			return vertexFormat;
+		}
+	}
+
+	if (vertexFormat.empty())
+	{
+		std::string message = fileName;
+		if (inner)
+			message += ": error: Inner vertex format is empty.";
+		else
+			message += ": error: Vertex format is empty.";
+		errorFunction(message.c_str());
+	}
+
+	return vertexFormat;
+}
+
+static std::vector<vfc::VertexFormat> readVertexFormatArray(const rapidjson::Value& value,
+	const char* fileName, const vfc::Converter::ErrorFunction& errorFunction)
+{
+	std::vector<vfc::VertexFormat> vertexFormat;
+	if (!value.IsArray())
+	{
+		std::string message = fileName;
+		message += ": error: Vertex format must be an array of arrays.";
+		errorFunction(message.c_str());
+		return vertexFormat;
+	}
+
+	vertexFormat.reserve(value.Size());
+	for (auto it = value.Begin(); it != value.End(); ++it)
+	{
+		vertexFormat.push_back(readVertexFormat(*it, fileName, errorFunction, true));
+		const vfc::VertexFormat& curFormat = vertexFormat.back();
+		if (curFormat.empty())
+		{
+			vertexFormat.clear();
+			return vertexFormat;
+		}
+
+		for (const vfc::VertexElement& element : curFormat)
+		{
+			for (std::size_t i = 0; i < vertexFormat.size() - 1; ++i)
+			{
+				if (vertexFormat[i].find(element.name.c_str()) == vertexFormat[i].end())
+					continue;
+
+				std::string message = fileName;
+				message += ": error: Vertex format element name '";
+				message += element.name;
+				message += "' isn't unique.";
+				errorFunction(message.c_str());
+				vertexFormat.clear();
+				return vertexFormat;
+			}
 		}
 	}
 
@@ -532,7 +589,7 @@ bool ConfigFile::load(const char* json, const char* fileName,
 		return false;
 	}
 
-	m_vertexFormat = readVertexFormat(vertexFormatIt->value, fileName, errorFunction);
+	m_vertexFormat = readVertexFormatArray(vertexFormatIt->value, fileName, errorFunction);
 	if (m_vertexFormat.empty())
 		return false;
 

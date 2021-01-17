@@ -1,16 +1,20 @@
 {
 	"vertexFormat":
 	[
-		{
-			"name": "position",
-			"layout": "X16Y16",
-			"type": "float"
-		},
-		{
-			"name": "texcoord",
-			"layout": "X16Y16",
-			"type": "UNorm"
-		}
+		[
+			{
+				"name": "position",
+				"layout": "X16Y16",
+				"type": "float"
+			}
+		],
+		[
+			{
+				"name": "texcoord",
+				"layout": "X16Y16",
+				"type": "UNorm"
+			}
+		]
 	],
 	"indexType": "UInt16",
 	"vertexStreams":

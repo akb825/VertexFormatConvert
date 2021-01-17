@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Aaron Barany
+ * Copyright 2020-2021 Aaron Barany
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,47 +19,64 @@
 #include <rapidjson/prettywriter.h>
 #include <cassert>
 
-std::string resultFile(const vfc::VertexFormat& vertexFormat, const Bounds* bounds,
-	std::uint32_t vertexCount, const char* vertexData, vfc::IndexType indexType,
-	const IndexFileData* indexData, std::size_t indexDataCount)
+std::string resultFile(const std::vector<vfc::VertexFormat>& vertexFormat,
+	const std::vector<std::vector<Bounds>>& bounds, const std::vector<std::string>& vertexData,
+	std::uint32_t vertexCount, vfc::IndexType indexType,
+	const std::vector<IndexFileData>& indexData)
 {
-	assert(indexDataCount == 0 || indexData);
+	assert(vertexFormat.size() == vertexData.size());
+	assert(vertexFormat.size() == bounds.size());
 	rapidjson::Document document(rapidjson::kObjectType);
 
-	rapidjson::Value vertexFormatArray(rapidjson::kArrayType);
-	vertexFormatArray.Reserve(static_cast<std::uint32_t>(vertexFormat.size()),
+	rapidjson::Value vertexArray(rapidjson::kArrayType);
+	vertexArray.Reserve(static_cast<std::uint32_t>(vertexFormat.size()),
 		document.GetAllocator());
 	for (std::size_t i = 0; i < vertexFormat.size(); ++i)
 	{
-		const vfc::VertexElement& element = vertexFormat[i];
-		rapidjson::Value elementObject(rapidjson::kObjectType);
-		elementObject.MemberReserve(6, document.GetAllocator());
-		elementObject.AddMember("name", rapidjson::StringRef(element.name.c_str()),
+		const vfc::VertexFormat& curFormat = vertexFormat[i];
+		const std::vector<Bounds>& curBounds = bounds[i];
+		const std::string& curData = vertexData[i];
+		assert(curFormat.size() == curBounds.size());
+
+		rapidjson::Value vertexInfo(rapidjson::kObjectType);
+		rapidjson::Value vertexFormatArray(rapidjson::kArrayType);
+		vertexFormatArray.Reserve(static_cast<std::uint32_t>(vertexFormat.size()),
 			document.GetAllocator());
-		elementObject.AddMember("layout",
-			rapidjson::StringRef(vfc::elementLayoutName(element.layout)), document.GetAllocator());
-		elementObject.AddMember("type",
-			rapidjson::StringRef(vfc::elementTypeName(element.type)), document.GetAllocator());
-		elementObject.AddMember("offset", element.offset, document.GetAllocator());
-
-		rapidjson::Value minBoundsArray(rapidjson::kArrayType);
-		rapidjson::Value maxBoundsArray(rapidjson::kArrayType);
-		minBoundsArray.Reserve(4, document.GetAllocator());
-		maxBoundsArray.Reserve(4, document.GetAllocator());
-		for (unsigned int j = 0; j < 4; ++j)
+		for (std::size_t j = 0; j < curFormat.size(); ++j)
 		{
-			minBoundsArray.PushBack(bounds[i].min[j], document.GetAllocator());
-			maxBoundsArray.PushBack(bounds[i].max[j], document.GetAllocator());
-		}
-		elementObject.AddMember("minValue", minBoundsArray, document.GetAllocator());
-		elementObject.AddMember("maxValue", maxBoundsArray, document.GetAllocator());
+			const vfc::VertexElement& element = curFormat[j];
+			rapidjson::Value elementObject(rapidjson::kObjectType);
+			elementObject.MemberReserve(6, document.GetAllocator());
+			elementObject.AddMember("name", rapidjson::StringRef(element.name.c_str()),
+				document.GetAllocator());
+			elementObject.AddMember("layout",
+				rapidjson::StringRef(vfc::elementLayoutName(element.layout)), document.GetAllocator());
+			elementObject.AddMember("type",
+				rapidjson::StringRef(vfc::elementTypeName(element.type)), document.GetAllocator());
+			elementObject.AddMember("offset", element.offset, document.GetAllocator());
 
-		vertexFormatArray.PushBack(elementObject, document.GetAllocator());
+			rapidjson::Value minBoundsArray(rapidjson::kArrayType);
+			rapidjson::Value maxBoundsArray(rapidjson::kArrayType);
+			minBoundsArray.Reserve(4, document.GetAllocator());
+			maxBoundsArray.Reserve(4, document.GetAllocator());
+			for (unsigned int k = 0; k < 4; ++k)
+			{
+				minBoundsArray.PushBack(curBounds[j].min[k], document.GetAllocator());
+				maxBoundsArray.PushBack(curBounds[j].max[k], document.GetAllocator());
+			}
+			elementObject.AddMember("minValue", minBoundsArray, document.GetAllocator());
+			elementObject.AddMember("maxValue", maxBoundsArray, document.GetAllocator());
+
+			vertexFormatArray.PushBack(elementObject, document.GetAllocator());
+		}
+		vertexInfo.AddMember("vertexFormat", vertexFormatArray, document.GetAllocator());
+		vertexInfo.AddMember("vertexStride", curFormat.stride(), document.GetAllocator());
+		vertexInfo.AddMember("vertexData", rapidjson::StringRef(curData.c_str()),
+			document.GetAllocator());
+		vertexArray.PushBack(vertexInfo, document.GetAllocator());
 	}
-	document.AddMember("vertexFormat", vertexFormatArray, document.GetAllocator());
-	document.AddMember("vertexStride", vertexFormat.stride(), document.GetAllocator());
+	document.AddMember("vertices", vertexArray, document.GetAllocator());
 	document.AddMember("vertexCount", vertexCount, document.GetAllocator());
-	document.AddMember("vertexData", rapidjson::StringRef(vertexData), document.GetAllocator());
 
 	switch (indexType)
 	{
@@ -73,19 +90,19 @@ std::string resultFile(const vfc::VertexFormat& vertexFormat, const Bounds* boun
 			break;
 	}
 
-	if (indexType != vfc::IndexType::NoIndices && indexDataCount > 0)
+	if (indexType != vfc::IndexType::NoIndices && !indexData.empty())
 	{
 		rapidjson::Value indexDataArray(rapidjson::kArrayType);
-		indexDataArray.Reserve(static_cast<std::uint32_t>(indexDataCount),
+		indexDataArray.Reserve(static_cast<std::uint32_t>(indexData.size()),
 			document.GetAllocator());
-		for (std::size_t i = 0; i < indexDataCount; ++i)
+		for (const IndexFileData& curData : indexData)
 		{
 			rapidjson::Value indexDataObject(rapidjson::kObjectType);
 			indexDataObject.MemberReserve(3, document.GetAllocator());
-			indexDataObject.AddMember("indexCount", indexData[i].count, document.GetAllocator());
-			indexDataObject.AddMember("baseVertex", indexData[i].baseVertex,
+			indexDataObject.AddMember("indexCount", curData.count, document.GetAllocator());
+			indexDataObject.AddMember("baseVertex", curData.baseVertex,
 				document.GetAllocator());
-			indexDataObject.AddMember("indexData", rapidjson::StringRef(indexData[i].dataFile),
+			indexDataObject.AddMember("indexData", rapidjson::StringRef(curData.dataFile),
 				document.GetAllocator());
 			indexDataArray.PushBack(indexDataObject, document.GetAllocator());
 		}

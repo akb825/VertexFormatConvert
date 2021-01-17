@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Aaron Barany
+ * Copyright 2020-2021 Aaron Barany
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,8 +55,10 @@ void printHelp(const char* argv0)
 	std::printf("\nInput:\n");
 	std::printf("The primary input is in the form of a JSON configuration. The file has the\n");
 	std::printf("following structure, with members required unless otherwise stated:\n");
-	std::printf("- vertexFormat: The vertex format to convert to. It is an array of objects with\n");
-	std::printf("  the following members:\n");
+	std::printf("- vertexFormat: The vertex format to convert to. It is a two-dimensional array\n");
+	std::printf("  of objects, where the outer array corresponds to the vertex streams and the\n");
+	std::printf("  inner array the elements within a vertex stream. Each object has the following\n");
+	std::printf("  members:\n");
 	std::printf("  - name: The name of the element.\n");
 	std::printf("  - layout: The data layout of the element (described below).\n");
 	std::printf("  - type: The data type of the element (described below).\n");
@@ -116,17 +118,19 @@ void printHelp(const char* argv0)
 
 	std::printf("\nOutput:\n");
 	std::printf("The general output is printed to stdout as JSON with the following layout:\n");
-	std::printf("- vertexFormat: The verex format that was output. It is an array of objects with\n");
-	std::printf("  the following members:\n");
-	std::printf("  - name: The name of the element.\n");
-	std::printf("  - layout: The data layout of the element.\n");
-	std::printf("  - type: The data type of the element.\n");
-	std::printf("  - offset: The offset in bytes from the start of the vertex to the element.\n");
-	std::printf("  - minValue: The minimum vertex value for this element as 4-element array.\n");
-	std::printf("  - maxValue: The maximum vertex value for this element as 4-element array.\n");
-	std::printf("- vertexStride: The size in bytes of each vertex.\n");
+	std::printf("- vertices: The vertex output. It is an array of objects with the following\n");
+	std::printf("  members:\n");
+	std::printf("  - vertexFormat: The verex format that was output. It is an array of objects\n");
+	std::printf("    with the following members:\n");
+	std::printf("    - name: The name of the element.\n");
+	std::printf("    - layout: The data layout of the element.\n");
+	std::printf("    - type: The data type of the element.\n");
+	std::printf("    - offset: The offset in bytes from the start of the vertex to the element.\n");
+	std::printf("    - minValue: The minimum vertex value for this element as 4-element array.\n");
+	std::printf("    - maxValue: The maximum vertex value for this element as 4-element array.\n");
+	std::printf("  - vertexStride: The size in bytes of each vertex.\n");
+	std::printf("  - vertexData: The path to a data file or base64 encoded output vertices.\n");
 	std::printf("- vertexCount: The number of vertices that were output.\n");
-	std::printf("- vertexData: The path to a data file or base64 encoded output vertices.\n");
 	std::printf("- indexType: (set if indexType was set on input) The type of the index data.\n");
 	std::printf("- indexBuffers: (set if indexType was set on input) The index buffers that were\n");
 	std::printf("  output. It is an array of objects with the following elements:\n");
@@ -270,28 +274,48 @@ bool writeFile(const void* data, std::size_t size, const std::string& fileName)
 
 std::string writeOutput(const vfc::Converter& converter, const std::string& outputDir)
 {
-	const std::vector<std::uint8_t>& vertices = converter.getVertices();
-	std::string vertexData;
+	const std::vector<std::vector<std::uint8_t>>& vertices = converter.getVertices();
+	std::vector<std::string> vertexData;
+	vertexData.reserve(vertices.size());
 	if (outputDir.empty())
 	{
-		vertexData = "base64:";
-		vertexData.append(base64::encode(vertices.data(), vertices.size()));
+		for (const std::vector<std::uint8_t>& curVertices : vertices)
+		{
+			std::string curData = "base64:";
+			curData.append(base64::encode(curVertices.data(), curVertices.size()));
+			vertexData.push_back(std::move(curData));
+		}
 	}
 	else
 	{
-		vertexData = path::join(outputDir, "vertices.dat");
-		if (!writeFile(vertices.data(), vertices.size(), vertexData))
+		std::string fileName;
+		for (std::size_t i = 0; i < vertices.size(); ++i)
 		{
-			std::fprintf(stderr, "error: Couldn't write vertex output file '%s'.\n",
-				vertexData.c_str());
-			return "";
+			const std::vector<std::uint8_t>& curVertices = vertices[i];
+			fileName = "vertices.";
+			fileName += std::to_string(i);
+			fileName += ".dat";
+			std::string outPath = path::join(outputDir, fileName);
+			if (!writeFile(curVertices.data(), curVertices.size(), outPath))
+			{
+				std::fprintf(stderr, "error: Couldn't write vertex output file '%s'.\n",
+					outPath.c_str());
+				return "";
+			}
+			vertexData.push_back(std::move(outPath));
 		}
 	}
 
-	const vfc::VertexFormat& vertexFormat = converter.getVertexFormat();
-	std::vector<Bounds> bounds(vertexFormat.size());
+	const std::vector<vfc::VertexFormat>& vertexFormat = converter.getVertexFormat();
+	std::vector<std::vector<Bounds>> bounds(vertexFormat.size());
 	for (std::size_t i = 0; i < vertexFormat.size(); ++i)
-		converter.getVertexElementBounds(bounds[i].min, bounds[i].max, i);
+	{
+		const vfc::VertexFormat& curFormat = vertexFormat[i];
+		std::vector<Bounds>& curBounds = bounds[i];
+		curBounds.resize(curFormat.size());
+		for (std::size_t j = 0; j < curFormat.size(); ++j)
+			converter.getVertexElementBounds(curBounds[j].min, curBounds[j].max, i, j);
+	}
 
 	std::vector<IndexFileData> indexFileData;
 	std::vector<std::string> indexStrings;
@@ -334,9 +358,8 @@ std::string writeOutput(const vfc::Converter& converter, const std::string& outp
 		}
 	}
 
-	return resultFile(converter.getVertexFormat(), bounds.data(), converter.getVertexCount(),
-		vertexData.c_str(), converter.getIndexType(), indexFileData.data(),
-		indexFileData.size());
+	return resultFile(converter.getVertexFormat(), bounds, vertexData, converter.getVertexCount(),
+		converter.getIndexType(), indexFileData);
 }
 
 int main(int argc, const char** argv)

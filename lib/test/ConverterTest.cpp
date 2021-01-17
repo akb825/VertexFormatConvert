@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Aaron Barany
+ * Copyright 2020-2021 Aaron Barany
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,8 @@ TEST(ConverterTest, QuadWithIndices)
 	EXPECT_EQ(1U, vfc::getIndexValue(indices[0].type, indices[0].data, 4));
 	EXPECT_EQ(3U, vfc::getIndexValue(indices[0].type, indices[0].data, 5));
 
-	const std::vector<std::uint8_t>& vertices = converter.getVertices();
+	ASSERT_EQ(1U, converter.getVertices().size());
+	const std::vector<std::uint8_t>& vertices = converter.getVertices()[0];
 	ASSERT_EQ(4U, converter.getVertexCount());
 	ASSERT_EQ(converter.getVertexCount()*vertexFormat.stride(), vertices.size());
 
@@ -172,7 +173,8 @@ TEST(ConverterTest, QuadWithoutIndices)
 
 	EXPECT_TRUE(converter.getIndices().empty());
 
-	const std::vector<std::uint8_t>& vertices = converter.getVertices();
+	ASSERT_EQ(1U, converter.getVertices().size());
+	const std::vector<std::uint8_t>& vertices = converter.getVertices()[0];
 	ASSERT_EQ(6U, converter.getVertexCount());
 	ASSERT_EQ(converter.getVertexCount()*vertexFormat.stride(), vertices.size());
 
@@ -294,7 +296,8 @@ TEST(ConverterTest, QuadRemapIndices)
 	EXPECT_EQ(1U, vfc::getIndexValue(indices[0].type, indices[0].data, 4));
 	EXPECT_EQ(3U, vfc::getIndexValue(indices[0].type, indices[0].data, 5));
 
-	const std::vector<std::uint8_t>& vertices = converter.getVertices();
+	ASSERT_EQ(1U, converter.getVertices().size());
+	const std::vector<std::uint8_t>& vertices = converter.getVertices()[0];
 	ASSERT_EQ(4U, converter.getVertexCount());
 	ASSERT_EQ(converter.getVertexCount()*vertexFormat.stride(), vertices.size());
 
@@ -398,7 +401,8 @@ TEST(ConverterTest, NormalizeToBoundsUNorm)
 	EXPECT_EQ(1U, vfc::getIndexValue(indices[0].type, indices[0].data, 4));
 	EXPECT_EQ(3U, vfc::getIndexValue(indices[0].type, indices[0].data, 5));
 
-	const std::vector<std::uint8_t>& vertices = converter.getVertices();
+	ASSERT_EQ(1U, converter.getVertices().size());
+	const std::vector<std::uint8_t>& vertices = converter.getVertices()[0];
 	ASSERT_EQ(4U, converter.getVertexCount());
 	ASSERT_EQ(converter.getVertexCount()*vertexFormat.stride(), vertices.size());
 
@@ -502,7 +506,8 @@ TEST(ConverterTest, NormalizeToBoundsSNorm)
 	EXPECT_EQ(1U, vfc::getIndexValue(indices[0].type, indices[0].data, 4));
 	EXPECT_EQ(3U, vfc::getIndexValue(indices[0].type, indices[0].data, 5));
 
-	const std::vector<std::uint8_t>& vertices = converter.getVertices();
+	ASSERT_EQ(1U, converter.getVertices().size());
+	const std::vector<std::uint8_t>& vertices = converter.getVertices()[0];
 	ASSERT_EQ(4U, converter.getVertexCount());
 	ASSERT_EQ(converter.getVertexCount()*vertexFormat.stride(), vertices.size());
 
@@ -606,7 +611,8 @@ TEST(ConverterTest, UNormToSNorm)
 	EXPECT_EQ(1U, vfc::getIndexValue(indices[0].type, indices[0].data, 4));
 	EXPECT_EQ(3U, vfc::getIndexValue(indices[0].type, indices[0].data, 5));
 
-	const std::vector<std::uint8_t>& vertices = converter.getVertices();
+	ASSERT_EQ(1U, converter.getVertices().size());
+	const std::vector<std::uint8_t>& vertices = converter.getVertices()[0];
 	ASSERT_EQ(4U, converter.getVertexCount());
 	ASSERT_EQ(converter.getVertexCount()*vertexFormat.stride(), vertices.size());
 
@@ -700,7 +706,8 @@ TEST(ConverterTest, SNormToUNorm)
 	EXPECT_EQ(1U, vfc::getIndexValue(indices[0].type, indices[0].data, 4));
 	EXPECT_EQ(3U, vfc::getIndexValue(indices[0].type, indices[0].data, 5));
 
-	const std::vector<std::uint8_t>& vertices = converter.getVertices();
+	ASSERT_EQ(1U, converter.getVertices().size());
+	const std::vector<std::uint8_t>& vertices = converter.getVertices()[0];
 	ASSERT_EQ(4U, converter.getVertexCount());
 	ASSERT_EQ(converter.getVertexCount()*vertexFormat.stride(), vertices.size());
 
@@ -827,7 +834,8 @@ TEST(ConverterTest, PointListWithMaxIndexValue)
 	EXPECT_EQ(1U, vfc::getIndexValue(indices[1].type, indices[1].data, 1));
 	EXPECT_EQ(2U, vfc::getIndexValue(indices[1].type, indices[1].data, 2));
 
-	const std::vector<std::uint8_t>& vertices = converter.getVertices();
+	ASSERT_EQ(1U, converter.getVertices().size());
+	const std::vector<std::uint8_t>& vertices = converter.getVertices()[0];
 	ASSERT_EQ(10U, converter.getVertexCount());
 	ASSERT_EQ(converter.getVertexCount()*vertexFormat.stride(), vertices.size());
 
@@ -1004,7 +1012,8 @@ TEST(ConverterTest, LineListWithMaxIndexValue)
 	EXPECT_EQ(1U, vfc::getIndexValue(indices[1].type, indices[1].data, 2));
 	EXPECT_EQ(2U, vfc::getIndexValue(indices[1].type, indices[1].data, 3));
 
-	const std::vector<std::uint8_t>& vertices = converter.getVertices();
+	ASSERT_EQ(1U, converter.getVertices().size());
+	const std::vector<std::uint8_t>& vertices = converter.getVertices()[0];
 	ASSERT_EQ(9U, converter.getVertexCount());
 	ASSERT_EQ(converter.getVertexCount()*vertexFormat.stride(), vertices.size());
 
@@ -1170,7 +1179,8 @@ TEST(ConverterTest, LineStripWithMaxIndexValue)
 	EXPECT_EQ(1U, vfc::getIndexValue(indices[1].type, indices[1].data, 1));
 	EXPECT_EQ(2U, vfc::getIndexValue(indices[1].type, indices[1].data, 2));
 
-	const std::vector<std::uint8_t>& vertices = converter.getVertices();
+	ASSERT_EQ(1U, converter.getVertices().size());
+	const std::vector<std::uint8_t>& vertices = converter.getVertices()[0];
 	ASSERT_EQ(9U, converter.getVertexCount());
 	ASSERT_EQ(converter.getVertexCount()*vertexFormat.stride(), vertices.size());
 
@@ -1338,7 +1348,8 @@ TEST(ConverterTest, TrinagleListWithMaxIndexValue)
 	EXPECT_EQ(1U, vfc::getIndexValue(indices[0].type, indices[0].data, 1));
 	EXPECT_EQ(2U, vfc::getIndexValue(indices[0].type, indices[0].data, 2));
 
-	const std::vector<std::uint8_t>& vertices = converter.getVertices();
+	ASSERT_EQ(1U, converter.getVertices().size());
+	const std::vector<std::uint8_t>& vertices = converter.getVertices()[0];
 	ASSERT_EQ(10U, converter.getVertexCount());
 	ASSERT_EQ(converter.getVertexCount()*vertexFormat.stride(), vertices.size());
 
@@ -1514,7 +1525,8 @@ TEST(ConverterTest, TrinagleStripWithMaxIndexValue)
 	EXPECT_EQ(1U, vfc::getIndexValue(indices[0].type, indices[0].data, 1));
 	EXPECT_EQ(2U, vfc::getIndexValue(indices[0].type, indices[0].data, 2));
 
-	const std::vector<std::uint8_t>& vertices = converter.getVertices();
+	ASSERT_EQ(1U, converter.getVertices().size());
+	const std::vector<std::uint8_t>& vertices = converter.getVertices()[0];
 	ASSERT_EQ(10U, converter.getVertexCount());
 	ASSERT_EQ(converter.getVertexCount()*vertexFormat.stride(), vertices.size());
 
@@ -1690,7 +1702,8 @@ TEST(ConverterTest, TrinagleFanWithMaxIndexValue)
 	EXPECT_EQ(1U, vfc::getIndexValue(indices[0].type, indices[0].data, 1));
 	EXPECT_EQ(2U, vfc::getIndexValue(indices[0].type, indices[0].data, 2));
 
-	const std::vector<std::uint8_t>& vertices = converter.getVertices();
+	ASSERT_EQ(1U, converter.getVertices().size());
+	const std::vector<std::uint8_t>& vertices = converter.getVertices()[0];
 	ASSERT_EQ(10U, converter.getVertexCount());
 	ASSERT_EQ(converter.getVertexCount()*vertexFormat.stride(), vertices.size());
 
@@ -1859,7 +1872,8 @@ TEST(ConverterTest, PatchListWithMaxIndexValue)
 	EXPECT_EQ(2U, vfc::getIndexValue(indices[0].type, indices[0].data, 2));
 	EXPECT_EQ(3U, vfc::getIndexValue(indices[0].type, indices[0].data, 3));
 
-	const std::vector<std::uint8_t>& vertices = converter.getVertices();
+	ASSERT_EQ(1U, converter.getVertices().size());
+	const std::vector<std::uint8_t>& vertices = converter.getVertices()[0];
 	ASSERT_EQ(8U, converter.getVertexCount());
 	ASSERT_EQ(converter.getVertexCount()*vertexFormat.stride(), vertices.size());
 
@@ -2272,4 +2286,367 @@ TEST(ConverterTest, PrimitiveRestartWithoutIndices)
 		"Indices must be output if a primitive restart is used."
 	};
 	EXPECT_EQ(expectedErrors, errors);
+}
+
+TEST(ConverterTest, QuadWithIndicesSplitStreams)
+{
+	float positions[] =
+	{
+		-1.0f, -1.0f,
+		 1.0f, -1.0f,
+		-1.0f,  1.0f,
+		-1.0f,  1.0f,
+		 1.0f, -1.0f,
+		 1.0f,  1.0f
+	};
+
+	vfc::VertexFormat positionFormat;
+	positionFormat.appendElement("positions", vfc::ElementLayout::X32Y32, vfc::ElementType::Float);
+
+	float texCoords[] =
+	{
+		0.0f, 0.0f,
+		1.0f, 0.0f,
+		0.0f, 1.0f,
+		0.0f, 1.0f,
+		1.0f, 0.0f,
+		1.0f, 1.0f
+	};
+
+	vfc::VertexFormat texCoordFormat;
+	texCoordFormat.appendElement("texCoords", vfc::ElementLayout::X32Y32, vfc::ElementType::Float);
+
+	std::vector<vfc::VertexFormat> vertexFormat(2);
+	vertexFormat[0].appendElement("positions", vfc::ElementLayout::X16Y16, vfc::ElementType::Float);
+	vertexFormat[1].appendElement("texCoords", vfc::ElementLayout::X16Y16, vfc::ElementType::UNorm);
+
+	vfc::Converter converter(vertexFormat, vfc::IndexType::UInt16,
+		vfc::PrimitiveType::TriangleList);
+	ASSERT_TRUE(converter.addVertexStream(std::move(positionFormat), positions, 6));
+	ASSERT_TRUE(converter.addVertexStream(std::move(texCoordFormat), texCoords, 6));
+	ASSERT_TRUE(converter.convert());
+
+	const std::vector<vfc::IndexData>& indices = converter.getIndices();
+	ASSERT_EQ(1U, indices.size());
+	ASSERT_EQ(6U, indices[0].count);
+	EXPECT_EQ(vfc::IndexType::UInt16, indices[0].type);
+	EXPECT_EQ(0U, vfc::getIndexValue(indices[0].type, indices[0].data, 0));
+	EXPECT_EQ(1U, vfc::getIndexValue(indices[0].type, indices[0].data, 1));
+	EXPECT_EQ(2U, vfc::getIndexValue(indices[0].type, indices[0].data, 2));
+	EXPECT_EQ(2U, vfc::getIndexValue(indices[0].type, indices[0].data, 3));
+	EXPECT_EQ(1U, vfc::getIndexValue(indices[0].type, indices[0].data, 4));
+	EXPECT_EQ(3U, vfc::getIndexValue(indices[0].type, indices[0].data, 5));
+
+	ASSERT_EQ(2U, converter.getVertices().size());
+	const std::vector<std::uint8_t>& positionVertices = converter.getVertices()[0];
+	const std::vector<std::uint8_t>& texCoordVertices = converter.getVertices()[1];
+	ASSERT_EQ(4U, converter.getVertexCount());
+	ASSERT_EQ(converter.getVertexCount()*vertexFormat[0].stride(), positionVertices.size());
+	ASSERT_EQ(converter.getVertexCount()*vertexFormat[1].stride(), texCoordVertices.size());
+
+	const std::uint8_t* positionVertexData = positionVertices.data();
+	const std::uint8_t* texCoordVertexData = texCoordVertices.data();
+	glm::vec2 position = glm::unpackHalf(
+		*reinterpret_cast<const glm::u16vec2*>(positionVertexData + vertexFormat[0][0].offset));
+	EXPECT_EQ(-1.0f, position.x);
+	EXPECT_EQ(-1.0f, position.y);
+	auto texCoord =
+		reinterpret_cast<const std::uint16_t*>(texCoordVertexData + vertexFormat[1][0].offset);
+	EXPECT_EQ(0U, texCoord[0]);
+	EXPECT_EQ(0U, texCoord[1]);
+
+	positionVertexData += vertexFormat[0].stride();
+	position = glm::unpackHalf(
+		*reinterpret_cast<const glm::u16vec2*>(positionVertexData + vertexFormat[0][0].offset));
+	EXPECT_EQ(1.0f, position.x);
+	EXPECT_EQ(-1.0f, position.y);
+	texCoordVertexData += vertexFormat[1].stride();
+	texCoord =
+		reinterpret_cast<const std::uint16_t*>(texCoordVertexData + vertexFormat[1][0].offset);
+	EXPECT_EQ(0xFFFF, texCoord[0]);
+	EXPECT_EQ(0U, texCoord[1]);
+
+	positionVertexData += vertexFormat[0].stride();
+	position = glm::unpackHalf(
+		*reinterpret_cast<const glm::u16vec2*>(positionVertexData + vertexFormat[0][0].offset));
+	EXPECT_EQ(-1.0f, position.x);
+	EXPECT_EQ(1.0f, position.y);
+	texCoordVertexData += vertexFormat[1].stride();
+	texCoord =
+		reinterpret_cast<const std::uint16_t*>(texCoordVertexData + vertexFormat[1][0].offset);
+	EXPECT_EQ(0U, texCoord[0]);
+	EXPECT_EQ(0xFFFF, texCoord[1]);
+
+	positionVertexData += vertexFormat[0].stride();
+	position = glm::unpackHalf(
+		*reinterpret_cast<const glm::u16vec2*>(positionVertexData + vertexFormat[0][0].offset));
+	EXPECT_EQ(1.0f, position.x);
+	EXPECT_EQ(1.0f, position.y);
+	texCoordVertexData += vertexFormat[1].stride();
+	texCoord =
+		reinterpret_cast<const std::uint16_t*>(texCoordVertexData + vertexFormat[1][0].offset);
+	EXPECT_EQ(0xFFFF, texCoord[0]);
+	EXPECT_EQ(0xFFFF, texCoord[1]);
+
+	EXPECT_EQ(positionVertices.data() + positionVertices.size(),
+		positionVertexData + vertexFormat[0].stride());
+	EXPECT_EQ(texCoordVertices.data() + texCoordVertices.size(),
+		texCoordVertexData + vertexFormat[0].stride());
+
+	vfc::VertexValue minBounds, maxBounds;
+	EXPECT_FALSE(converter.getVertexElementBounds(minBounds, maxBounds, "asdf"));
+	EXPECT_TRUE(converter.getVertexElementBounds(minBounds, maxBounds, "positions"));
+	EXPECT_EQ(vfc::VertexValue(-1.0, -1.0), minBounds);
+	EXPECT_EQ(vfc::VertexValue(1.0, 1.0), maxBounds);
+
+	EXPECT_TRUE(converter.getVertexElementBounds(minBounds, maxBounds, "texCoords"));
+	EXPECT_EQ(vfc::VertexValue(0.0, 0.0), minBounds);
+	EXPECT_EQ(vfc::VertexValue(1.0, 1.0), maxBounds);
+}
+
+TEST(ConverterTest, QuadWithoutIndicesSplitStreams)
+{
+	float positions[] =
+	{
+		-1.0f, -1.0f,
+		 1.0f, -1.0f,
+		-1.0f,  1.0f,
+		-1.0f,  1.0f,
+		 1.0f, -1.0f,
+		 1.0f,  1.0f
+	};
+
+	vfc::VertexFormat positionFormat;
+	positionFormat.appendElement("positions", vfc::ElementLayout::X32Y32, vfc::ElementType::Float);
+
+	float texCoords[] =
+	{
+		0.0f, 0.0f,
+		1.0f, 0.0f,
+		0.0f, 1.0f,
+		0.0f, 1.0f,
+		1.0f, 0.0f,
+		1.0f, 1.0f
+	};
+
+	vfc::VertexFormat texCoordFormat;
+	texCoordFormat.appendElement("texCoords", vfc::ElementLayout::X32Y32, vfc::ElementType::Float);
+
+	std::vector<vfc::VertexFormat> vertexFormat(2);
+	vertexFormat[0].appendElement("positions", vfc::ElementLayout::X16Y16, vfc::ElementType::Float);
+	vertexFormat[1].appendElement("texCoords", vfc::ElementLayout::X16Y16, vfc::ElementType::UNorm);
+
+	vfc::Converter converter(vertexFormat, vfc::IndexType::NoIndices,
+		vfc::PrimitiveType::TriangleList);
+	ASSERT_TRUE(converter.addVertexStream(std::move(positionFormat), positions, 6));
+	ASSERT_TRUE(converter.addVertexStream(std::move(texCoordFormat), texCoords, 6));
+	ASSERT_TRUE(converter.convert());
+
+	EXPECT_TRUE(converter.getIndices().empty());
+
+	ASSERT_EQ(2U, converter.getVertices().size());
+	const std::vector<std::uint8_t>& positionVertices = converter.getVertices()[0];
+	const std::vector<std::uint8_t>& texCoordVertices = converter.getVertices()[1];
+	ASSERT_EQ(6U, converter.getVertexCount());
+	ASSERT_EQ(converter.getVertexCount()*vertexFormat[0].stride(), positionVertices.size());
+	ASSERT_EQ(converter.getVertexCount()*vertexFormat[1].stride(), texCoordVertices.size());
+
+	const std::uint8_t* positionVertexData = positionVertices.data();
+	const std::uint8_t* texCoordVertexData = texCoordVertices.data();
+	glm::vec2 position = glm::unpackHalf(
+		*reinterpret_cast<const glm::u16vec2*>(positionVertexData + vertexFormat[0][0].offset));
+	EXPECT_EQ(-1.0f, position.x);
+	EXPECT_EQ(-1.0f, position.y);
+	auto texCoord =
+		reinterpret_cast<const std::uint16_t*>(texCoordVertexData + vertexFormat[1][0].offset);
+	EXPECT_EQ(0U, texCoord[0]);
+	EXPECT_EQ(0U, texCoord[1]);
+
+	positionVertexData += vertexFormat[0].stride();
+	position = glm::unpackHalf(
+		*reinterpret_cast<const glm::u16vec2*>(positionVertexData + vertexFormat[0][0].offset));
+	EXPECT_EQ(1.0f, position.x);
+	EXPECT_EQ(-1.0f, position.y);
+	texCoordVertexData += vertexFormat[1].stride();
+	texCoord =
+		reinterpret_cast<const std::uint16_t*>(texCoordVertexData + vertexFormat[1][0].offset);
+	EXPECT_EQ(0xFFFF, texCoord[0]);
+	EXPECT_EQ(0U, texCoord[1]);
+
+	positionVertexData += vertexFormat[0].stride();
+	position = glm::unpackHalf(
+		*reinterpret_cast<const glm::u16vec2*>(positionVertexData + vertexFormat[0][0].offset));
+	EXPECT_EQ(-1.0f, position.x);
+	EXPECT_EQ(1.0f, position.y);
+	texCoordVertexData += vertexFormat[1].stride();
+	texCoord =
+		reinterpret_cast<const std::uint16_t*>(texCoordVertexData + vertexFormat[1][0].offset);
+	EXPECT_EQ(0U, texCoord[0]);
+	EXPECT_EQ(0xFFFF, texCoord[1]);
+
+	positionVertexData += vertexFormat[0].stride();
+	position = glm::unpackHalf(
+		*reinterpret_cast<const glm::u16vec2*>(positionVertexData + vertexFormat[0][0].offset));
+	EXPECT_EQ(-1.0f, position.x);
+	EXPECT_EQ(1.0f, position.y);
+	texCoordVertexData += vertexFormat[1].stride();
+	texCoord =
+		reinterpret_cast<const std::uint16_t*>(texCoordVertexData + vertexFormat[1][0].offset);
+	EXPECT_EQ(0U, texCoord[0]);
+	EXPECT_EQ(0xFFFF, texCoord[1]);
+
+	positionVertexData += vertexFormat[0].stride();
+	position = glm::unpackHalf(
+		*reinterpret_cast<const glm::u16vec2*>(positionVertexData + vertexFormat[0][0].offset));
+	EXPECT_EQ(1.0f, position.x);
+	EXPECT_EQ(-1.0f, position.y);
+	texCoordVertexData += vertexFormat[1].stride();
+	texCoord =
+		reinterpret_cast<const std::uint16_t*>(texCoordVertexData + vertexFormat[1][0].offset);
+	EXPECT_EQ(0xFFFF, texCoord[0]);
+	EXPECT_EQ(0U, texCoord[1]);
+
+	positionVertexData += vertexFormat[0].stride();
+	position = glm::unpackHalf(
+		*reinterpret_cast<const glm::u16vec2*>(positionVertexData + vertexFormat[0][0].offset));
+	EXPECT_EQ(1.0f, position.x);
+	EXPECT_EQ(1.0f, position.y);
+	texCoordVertexData += vertexFormat[1].stride();
+	texCoord =
+		reinterpret_cast<const std::uint16_t*>(texCoordVertexData + vertexFormat[1][0].offset);
+	EXPECT_EQ(0xFFFF, texCoord[0]);
+	EXPECT_EQ(0xFFFF, texCoord[1]);
+
+	EXPECT_EQ(positionVertices.data() + positionVertices.size(),
+		positionVertexData + vertexFormat[0].stride());
+	EXPECT_EQ(texCoordVertices.data() + texCoordVertices.size(),
+		texCoordVertexData + vertexFormat[0].stride());
+
+	vfc::VertexValue minBounds, maxBounds;
+	EXPECT_FALSE(converter.getVertexElementBounds(minBounds, maxBounds, "asdf"));
+	EXPECT_TRUE(converter.getVertexElementBounds(minBounds, maxBounds, "positions"));
+	EXPECT_EQ(vfc::VertexValue(-1.0, -1.0), minBounds);
+	EXPECT_EQ(vfc::VertexValue(1.0, 1.0), maxBounds);
+
+	EXPECT_TRUE(converter.getVertexElementBounds(minBounds, maxBounds, "texCoords"));
+	EXPECT_EQ(vfc::VertexValue(0.0, 0.0), minBounds);
+	EXPECT_EQ(vfc::VertexValue(1.0, 1.0), maxBounds);
+}
+
+TEST(ConverterTest, QuadRemapIndicesSplitStreams)
+{
+	float positions[] =
+	{
+		-1.0f, -1.0f,
+		 1.0f, -1.0f,
+		-1.0f,  1.0f,
+		 1.0f,  1.0f
+	};
+
+	std::uint32_t positionIndices[] = {0, 1, 2, 2, 1, 3};
+
+	vfc::VertexFormat positionFormat;
+	positionFormat.appendElement("positions", vfc::ElementLayout::X32Y32, vfc::ElementType::Float);
+
+	float texCoords[] =
+	{
+		1.0f, 1.0f,
+		0.0f, 1.0f,
+		1.0f, 0.0f,
+		0.0f, 0.0f
+	};
+
+	std::uint16_t texCoordIndices[] = {3, 2, 1, 1, 2, 0};
+
+	vfc::VertexFormat texCoordFormat;
+	texCoordFormat.appendElement("texCoords", vfc::ElementLayout::X32Y32, vfc::ElementType::Float);
+
+	std::vector<vfc::VertexFormat> vertexFormat(2);
+	vertexFormat[0].appendElement("positions", vfc::ElementLayout::X16Y16, vfc::ElementType::Float);
+	vertexFormat[1].appendElement("texCoords", vfc::ElementLayout::X16Y16, vfc::ElementType::UNorm);
+
+	vfc::Converter converter(vertexFormat, vfc::IndexType::UInt16,
+		vfc::PrimitiveType::TriangleList);
+	ASSERT_TRUE(converter.addVertexStream(std::move(positionFormat), positions, 4,
+		vfc::IndexType::UInt32, positionIndices, 6));
+	ASSERT_TRUE(converter.addVertexStream(std::move(texCoordFormat), texCoords, 4,
+		vfc::IndexType::UInt16, texCoordIndices, 6));
+	ASSERT_TRUE(converter.convert());
+
+	const std::vector<vfc::IndexData>& indices = converter.getIndices();
+	ASSERT_EQ(1U, indices.size());
+	ASSERT_EQ(6U, indices[0].count);
+	EXPECT_EQ(vfc::IndexType::UInt16, indices[0].type);
+	EXPECT_EQ(0U, vfc::getIndexValue(indices[0].type, indices[0].data, 0));
+	EXPECT_EQ(1U, vfc::getIndexValue(indices[0].type, indices[0].data, 1));
+	EXPECT_EQ(2U, vfc::getIndexValue(indices[0].type, indices[0].data, 2));
+	EXPECT_EQ(2U, vfc::getIndexValue(indices[0].type, indices[0].data, 3));
+	EXPECT_EQ(1U, vfc::getIndexValue(indices[0].type, indices[0].data, 4));
+	EXPECT_EQ(3U, vfc::getIndexValue(indices[0].type, indices[0].data, 5));
+
+	ASSERT_EQ(2U, converter.getVertices().size());
+	const std::vector<std::uint8_t>& positionVertices = converter.getVertices()[0];
+	const std::vector<std::uint8_t>& texCoordVertices = converter.getVertices()[1];
+	ASSERT_EQ(4U, converter.getVertexCount());
+	ASSERT_EQ(converter.getVertexCount()*vertexFormat[0].stride(), positionVertices.size());
+	ASSERT_EQ(converter.getVertexCount()*vertexFormat[1].stride(), texCoordVertices.size());
+
+	const std::uint8_t* positionVertexData = positionVertices.data();
+	const std::uint8_t* texCoordVertexData = texCoordVertices.data();
+	glm::vec2 position = glm::unpackHalf(
+		*reinterpret_cast<const glm::u16vec2*>(positionVertexData + vertexFormat[0][0].offset));
+	EXPECT_EQ(-1.0f, position.x);
+	EXPECT_EQ(-1.0f, position.y);
+	auto texCoord =
+		reinterpret_cast<const std::uint16_t*>(texCoordVertexData + vertexFormat[1][0].offset);
+	EXPECT_EQ(0U, texCoord[0]);
+	EXPECT_EQ(0U, texCoord[1]);
+
+	positionVertexData += vertexFormat[0].stride();
+	position = glm::unpackHalf(
+		*reinterpret_cast<const glm::u16vec2*>(positionVertexData + vertexFormat[0][0].offset));
+	EXPECT_EQ(1.0f, position.x);
+	EXPECT_EQ(-1.0f, position.y);
+	texCoordVertexData += vertexFormat[1].stride();
+	texCoord =
+		reinterpret_cast<const std::uint16_t*>(texCoordVertexData + vertexFormat[1][0].offset);
+	EXPECT_EQ(0xFFFF, texCoord[0]);
+	EXPECT_EQ(0U, texCoord[1]);
+
+	positionVertexData += vertexFormat[0].stride();
+	position = glm::unpackHalf(
+		*reinterpret_cast<const glm::u16vec2*>(positionVertexData + vertexFormat[0][0].offset));
+	EXPECT_EQ(-1.0f, position.x);
+	EXPECT_EQ(1.0f, position.y);
+	texCoordVertexData += vertexFormat[1].stride();
+	texCoord =
+		reinterpret_cast<const std::uint16_t*>(texCoordVertexData + vertexFormat[1][0].offset);
+	EXPECT_EQ(0U, texCoord[0]);
+	EXPECT_EQ(0xFFFF, texCoord[1]);
+
+	positionVertexData += vertexFormat[0].stride();
+	position = glm::unpackHalf(
+		*reinterpret_cast<const glm::u16vec2*>(positionVertexData + vertexFormat[0][0].offset));
+	EXPECT_EQ(1.0f, position.x);
+	EXPECT_EQ(1.0f, position.y);
+	texCoordVertexData += vertexFormat[1].stride();
+	texCoord =
+		reinterpret_cast<const std::uint16_t*>(texCoordVertexData + vertexFormat[1][0].offset);
+	EXPECT_EQ(0xFFFF, texCoord[0]);
+	EXPECT_EQ(0xFFFF, texCoord[1]);
+
+	EXPECT_EQ(positionVertices.data() + positionVertices.size(),
+		positionVertexData + vertexFormat[0].stride());
+	EXPECT_EQ(texCoordVertices.data() + texCoordVertices.size(),
+		texCoordVertexData + vertexFormat[0].stride());
+
+	vfc::VertexValue minBounds, maxBounds;
+	EXPECT_FALSE(converter.getVertexElementBounds(minBounds, maxBounds, "asdf"));
+	EXPECT_TRUE(converter.getVertexElementBounds(minBounds, maxBounds, "positions"));
+	EXPECT_EQ(vfc::VertexValue(-1.0, -1.0), minBounds);
+	EXPECT_EQ(vfc::VertexValue(1.0, 1.0), maxBounds);
+
+	EXPECT_TRUE(converter.getVertexElementBounds(minBounds, maxBounds, "texCoords"));
+	EXPECT_EQ(vfc::VertexValue(0.0, 0.0), minBounds);
+	EXPECT_EQ(vfc::VertexValue(1.0, 1.0), maxBounds);
 }
