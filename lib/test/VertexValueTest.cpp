@@ -45,10 +45,15 @@
 #pragma GCC diagnostic ignored "-Wunused-function"
 #endif
 
-static std::ostream& operator<<(std::ostream& stream, const vfc::VertexValue& value)
+namespace vfc
+{
+
+static std::ostream& operator<<(std::ostream& stream, const VertexValue& value)
 {
 	return stream << value[0] << ", " << value[1] << ", " << value[2] << ", " << value[3];
 }
+
+} // namespace vfc
 
 #if VFC_CLANG
 #pragma GCC diagnostic pop
