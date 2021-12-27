@@ -20,8 +20,7 @@ jobs:
                 cmake.args: -DVFC_SHARED=ON
     steps:
       - script: |
-            git submodule init
-            git submodule update
+            git submodule update --init
         displayName: Download submodules
         workingDirectory: $(Build.SourcesDirectory)
       - script: |
@@ -94,7 +93,7 @@ jobs:
         displayName: Publish test results release
   - job: Mac
     pool:
-        vmImage: macOS-1015
+        vmImage: macOS-latest
     workspace:
         clean: all
     strategy:
@@ -107,8 +106,7 @@ jobs:
                 cmake.args: -DVFC_SHARED=ON
     steps:
       - script: |
-            git submodule init
-            git submodule update
+            git submodule update --init
         displayName: Download submodules
         workingDirectory: $(Build.SourcesDirectory)
       - script: |
@@ -181,7 +179,7 @@ jobs:
         displayName: Publish test results release
   - job: Windows
     pool:
-        vmImage: windows-2019
+        vmImage: windows-latest
     workspace:
         clean: all
     strategy:
@@ -204,8 +202,7 @@ jobs:
                 cmake.args: -DVFC_SHARED=ON
     steps:
       - bash: |
-            git submodule init
-            git submodule update
+            git submodule update --init
         displayName: Download submodules
         workingDirectory: $(Build.SourcesDirectory)
       - bash: |
@@ -217,7 +214,7 @@ jobs:
         workingDirectory: $(Build.BinariesDirectory)
       - script: |
             cmake .. -DCMAKE_INSTALL_PREFIX=$(dependency.location) -Dgtest_force_shared_crt=ON ^
-                -A $(arch)
+                -A $(arch) -T v140
             cmake --build . --config Debug
             cmake --build . --config Debug --target install
             REM Need to also install release build to see the debug version.
@@ -228,7 +225,7 @@ jobs:
       - task: CMake@1
         inputs:
             workingDirectory: $(Build.BinariesDirectory)
-            cmakeArgs: $(cmake.commonArgs) $(cmake.args) -A $(arch) $(Build.SourcesDirectory)
+            cmakeArgs: $(cmake.commonArgs) $(cmake.args) -A $(arch) -T v140 $(Build.SourcesDirectory)
         displayName: Run CMake
       - task: CMake@1
         inputs:
