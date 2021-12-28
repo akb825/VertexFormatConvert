@@ -89,6 +89,7 @@ The following options may be used when running cmake:
 * `-DVFC_ROOT_FOLDER=folder`: The root folder for the projects in IDEs that support them. (e.g. Visual Studio or XCode) This is useful if embedding VFC in another project. Defaults to VFC.
 * `-DVFC_INSTALL=ON|OFF`: Allow installation for Cuttlefish components. This can be useful when embedding in other projects to prevent installations from including Cuttlefish. For example, when statically linking into a shared library. Default is `ON`.
 * `-DVFC_INSTALL_SET_RPATH=ON|OFF`: Set rpath during install for the library and tool on installation. Set to `OFF` if including in another project that wants to control the rpath. Default is `ON`.
+* `-DCMAKE_OSX_DEPLOYMENT_TARGET=version`: Minimum version of macOS to target when building for Mac. Defaults to 10.11.
 
 Once you have built and installed VFC, you can find the library by calling `find_package(VFC CONFIG)` within your CMake files. Libraries and include directories can be accessed through the `VFC_LIBRARIES` and `VFC_INCLUDE_DIRS` CMake variables.
 

@@ -19,7 +19,7 @@ set(VFC_ROOT_FOLDER VFC CACHE STRING
 set(VFC_INSTALL ON CACHE BOOL "Allow installation for VFC components.")
 set(VFC_INSTALL_SET_RPATH ON CACHE BOOL "Set rpath for library and tool on installation.")
 
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "Minimum macOS deployment version.")
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.11 CACHE STRING "Minimum macOS deployment version.")
 
 if (VFC_BUILD_TESTS)
 	find_package(GTest QUIET)
