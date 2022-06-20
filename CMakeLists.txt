@@ -2,7 +2,13 @@ cmake_minimum_required(VERSION 3.1)
 project(VFC)
 
 # Build options
-set(VFC_SHARED ON CACHE BOOL "Build VFC using shared libraries.")
+# Use if since BUILD_SHARED_LIBS defaults to unset.
+if (BUILD_SHARED_LIBS)
+	set(VFC_SHARED_DEFAULT ON)
+else()
+	set(VFC_SHARED_DEFAULT OFF)
+endif()
+set(VFC_SHARED ${VFC_SHARED_DEFAULT} CACHE BOOL "Build VFC using shared libraries.")
 
 # Options for disabling portions of the build.
 set(VFC_BUILD_TESTS ON CACHE BOOL "Build unit tests.")
@@ -53,7 +59,7 @@ endif()
 
 set(VFC_MAJOR_VERSION 2)
 set(VFC_MINOR_VERSION 0)
-set(VFC_PATCH_VERSION 3)
+set(VFC_PATCH_VERSION 4)
 set(VFC_VERSION ${VFC_MAJOR_VERSION}.${VFC_MINOR_VERSION}.${VFC_PATCH_VERSION})
 
 set(VFC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
