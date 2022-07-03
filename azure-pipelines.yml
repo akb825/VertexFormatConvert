@@ -214,7 +214,7 @@ jobs:
         workingDirectory: $(Build.BinariesDirectory)
       - script: |
             cmake .. -DCMAKE_INSTALL_PREFIX=$(dependency.location) -Dgtest_force_shared_crt=ON ^
-                -A $(arch) -T v141
+                -A $(arch) -T v141 -DCMAKE_DEBUG_POSTFIX=d
             cmake --build . --config Debug
             cmake --build . --config Debug --target install
             REM Need to also install release build to see the debug version.
