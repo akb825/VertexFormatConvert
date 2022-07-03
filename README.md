@@ -17,7 +17,7 @@ The following software is required to build VFC:
 * [CMake](https://cmake.org/) 3.1 or later
 * [GLM](https://glm.g-truc.net/) (required, included as a submodule)
 * [RapidJSON](https://rapidjson.org/) (required for tool, included as a submodule)
-* [doxygen](http://www.stack.nl/~dimitri/doxygen/) (optional)
+* [doxygen](https://doxygen.nl/) (optional)
 * [gtest](https://github.com/google/googletest) (optional)
 
 The submodules can be downloaded by running the commands
