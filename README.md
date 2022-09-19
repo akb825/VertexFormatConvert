@@ -91,9 +91,9 @@ The following options may be used when running cmake:
 * `-DVFC_INSTALL_SET_RPATH=ON|OFF`: Set rpath during install for the library and tool on installation. Set to `OFF` if including in another project that wants to control the rpath. Default is `ON`.
 * `-DCMAKE_OSX_DEPLOYMENT_TARGET=version`: Minimum version of macOS to target when building for Mac. Defaults to 10.11.
 
-Once you have built and installed VFC, you can find the library by calling `find_package(VFC CONFIG)` within your CMake files. Libraries and include directories can be accessed through the `VFC_LIBRARIES` and `VFC_INCLUDE_DIRS` CMake variables.
+Once you have built and installed VFC, you can find the library by calling `find_package(VFC)` within your CMake files. You can either link to the `VFC::lib` target or use the `VFC_LIBRARIES` and `VFC_INCLUDE_DIRS` CMake variables. The `VFC::tool` target may also be used for the tool executable.
 
-> **Note:** In order for `find_package()` to succeed, on Windows you will need to add the path to `INSTALL_DIR/lib/cmake` to `CMAKE_PREFIX_PATH`. (e.g. `C:/Program Files/VFC/lib/cmake`) On other systems, if you don't install to a standard location, you will need to add the base installation path to `CMAKE_PREFIX_PATH`.
+> **Note:** In order for `find_package()` to succeed, you will need to add the base installation path to `CMAKE_PREFIX_PATH`.
 
 # Further Documentation
 

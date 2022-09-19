@@ -1,13 +1,12 @@
 file(GLOB sources *.cpp *.h)
-add_executable(vfc ${sources})
+add_executable(tool ${sources})
+add_executable(VFC::tool ALIAS tool)
+set_target_properties(tool PROPERTIES OUTPUT_NAME vfc)
 
-target_link_libraries(vfc PRIVATE vfc_lib)
-target_include_directories(vfc PRIVATE rapidjson/include)
+target_link_libraries(tool PRIVATE VFC::lib)
+target_include_directories(tool PRIVATE rapidjson/include)
 
-vfc_set_folder(vfc tools)
-
-if (VFC_INSTALL)
-	install(TARGETS vfc RUNTIME DESTINATION bin COMPONENT tool)
-endif()
+vfc_set_folder(tool tools)
+vfc_install_executable(tool)
 
 add_subdirectory(test)

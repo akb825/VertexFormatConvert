@@ -58,8 +58,8 @@ if (VFC_OUTPUT_DIR)
 endif()
 
 set(VFC_MAJOR_VERSION 2)
-set(VFC_MINOR_VERSION 0)
-set(VFC_PATCH_VERSION 5)
+set(VFC_MINOR_VERSION 1)
+set(VFC_PATCH_VERSION 0)
 set(VFC_VERSION ${VFC_MAJOR_VERSION}.${VFC_MINOR_VERSION}.${VFC_PATCH_VERSION})
 
 set(VFC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -72,6 +72,25 @@ add_subdirectory(lib)
 if (VFC_BUILD_TOOL)
 	add_subdirectory(tool)
 endif()
+
+include(CMakePackageConfigHelpers)
+set(versionPath ${VFC_EXPORTS_DIR}/VFCConfigVersion.cmake)
+write_basic_package_version_file(${versionPath}
+	VERSION ${VFC_VERSION}
+	COMPATIBILITY SameMajorVersion)
+
+set(configPath ${VFC_EXPORTS_DIR}/VFCConfig.cmake)
+set(configLines
+	"include(\${CMAKE_CURRENT_LIST_DIR}/lib-targets.cmake)\n"
+	"set(VFC_LIBRARIES VFC::lib)\n"
+	"get_target_property(VFC_INCLUDE_DIRS VFC::lib INTERFACE_INCLUDE_DIRECTORIES)\n")
+if (VFC_BUILD_TOOL)
+	list(APPEND configLines "include(\${CMAKE_CURRENT_LIST_DIR}/tool-targets.cmake)\n")
+endif()
+file(WRITE ${configPath} ${configLines})
+
+install(FILES ${configPath} ${versionPath} DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/VFC
+	COMPONENT dev)
 
 # Documentation. (populated by built libraries)
 add_subdirectory(doc)
