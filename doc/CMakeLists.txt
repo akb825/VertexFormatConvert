@@ -27,5 +27,5 @@ add_custom_target(doc ALL DEPENDS ${outputFile})
 vfc_set_folder(doc "")
 
 if (VFC_INSTALL)
-	install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION share/doc/VFC)
+	install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/ DESTINATION ${CMAKE_INSTALL_DOCDIR})
 endif()
