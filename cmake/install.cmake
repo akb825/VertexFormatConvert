@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-function(vfc_install_library target)
-	set_property(TARGET ${target} PROPERTY VERSION ${VFC_VERSION})
-	set_property(TARGET ${target} PROPERTY DEBUG_POSTFIX d)
+function(vfc_install_library target name)
+	set_target_properties(${target} PROPERTIES VERSION ${VFC_VERSION} DEBUG_POSTFIX d
+		EXPORT_NAME ${name})
+	add_library(VFC::${name} ALIAS ${target})
 
 	set(interfaceIncludes
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -54,7 +55,10 @@ function(vfc_install_library target)
 		DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/VFC)
 endfunction()
 
-function(vfc_install_executable target)
+function(vfc_install_executable target name)
+	set_target_properties(${target} PROPERTIES EXPORT_NAME ${name})
+	add_executable(VFC::${name} ALIAS ${target})
+
 	if (NOT VFC_INSTALL)
 		return()
 	endif()

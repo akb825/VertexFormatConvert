@@ -10,5 +10,4 @@ add_executable(vfc_test ${sources})
 target_include_directories(vfc_test PRIVATE ${GTEST_INCLUDE_DIRS} ../glm)
 target_link_libraries(vfc_test PRIVATE VFC::lib ${GTEST_BOTH_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
-vfc_set_folder(vfc_test tests)
 add_test(NAME VFCLibTest COMMAND vfc_test)

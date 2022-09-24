@@ -22,9 +22,7 @@ add_custom_command(OUTPUT ${outputFile}
 	WORKING_DIRECTORY ${rootDir}
 	DEPENDS ${dependencies} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile ${rootDir}/README.md
 	COMMENT "Generating API documentation with Doxygen" VERBATIM)
-add_custom_target(doc ALL DEPENDS ${outputFile})
-
-vfc_set_folder(doc "")
+add_custom_target(vfc_doc ALL DEPENDS ${outputFile})
 
 if (VFC_INSTALL)
 	install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/ DESTINATION ${CMAKE_INSTALL_DOCDIR})

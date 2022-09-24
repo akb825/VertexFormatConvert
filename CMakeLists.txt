@@ -82,11 +82,11 @@ if (VFC_INSTALL)
 
 	set(configPath ${VFC_EXPORTS_DIR}/VFCConfig.cmake)
 	set(configLines
-		"include(\${CMAKE_CURRENT_LIST_DIR}/lib-targets.cmake)\n"
+		"include(\${CMAKE_CURRENT_LIST_DIR}/vfc_lib-targets.cmake)\n"
 		"set(VFC_LIBRARIES VFC::lib)\n"
 		"get_target_property(VFC_INCLUDE_DIRS VFC::lib INTERFACE_INCLUDE_DIRECTORIES)\n")
 	if (VFC_BUILD_TOOL)
-		list(APPEND configLines "include(\${CMAKE_CURRENT_LIST_DIR}/tool-targets.cmake)\n")
+		list(APPEND configLines "include(\${CMAKE_CURRENT_LIST_DIR}/vfc-targets.cmake)\n")
 	endif()
 	file(WRITE ${configPath} ${configLines})
 

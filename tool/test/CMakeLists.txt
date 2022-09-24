@@ -12,7 +12,6 @@ target_include_directories(vfc_tool_test PRIVATE ${GTEST_INCLUDE_DIRS} .. ../rap
 target_link_libraries(vfc_tool_test PRIVATE VFC::lib ${GTEST_BOTH_LIBRARIES}
 	${CMAKE_THREAD_LIBS_INIT})
 
-vfc_set_folder(vfc_tool_test tests)
 add_test(NAME VFCToolTest COMMAND vfc_tool_test)
 
 set(functionalTestPath ${CMAKE_CURRENT_SOURCE_DIR}/functional)
