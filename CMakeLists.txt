@@ -73,24 +73,26 @@ if (VFC_BUILD_TOOL)
 	add_subdirectory(tool)
 endif()
 
-include(CMakePackageConfigHelpers)
-set(versionPath ${VFC_EXPORTS_DIR}/VFCConfigVersion.cmake)
-write_basic_package_version_file(${versionPath}
-	VERSION ${VFC_VERSION}
-	COMPATIBILITY SameMajorVersion)
+if (VFC_INSTALL)
+	include(CMakePackageConfigHelpers)
+	set(versionPath ${VFC_EXPORTS_DIR}/VFCConfigVersion.cmake)
+	write_basic_package_version_file(${versionPath}
+		VERSION ${VFC_VERSION}
+		COMPATIBILITY SameMajorVersion)
 
-set(configPath ${VFC_EXPORTS_DIR}/VFCConfig.cmake)
-set(configLines
-	"include(\${CMAKE_CURRENT_LIST_DIR}/lib-targets.cmake)\n"
-	"set(VFC_LIBRARIES VFC::lib)\n"
-	"get_target_property(VFC_INCLUDE_DIRS VFC::lib INTERFACE_INCLUDE_DIRECTORIES)\n")
-if (VFC_BUILD_TOOL)
-	list(APPEND configLines "include(\${CMAKE_CURRENT_LIST_DIR}/tool-targets.cmake)\n")
+	set(configPath ${VFC_EXPORTS_DIR}/VFCConfig.cmake)
+	set(configLines
+		"include(\${CMAKE_CURRENT_LIST_DIR}/lib-targets.cmake)\n"
+		"set(VFC_LIBRARIES VFC::lib)\n"
+		"get_target_property(VFC_INCLUDE_DIRS VFC::lib INTERFACE_INCLUDE_DIRECTORIES)\n")
+	if (VFC_BUILD_TOOL)
+		list(APPEND configLines "include(\${CMAKE_CURRENT_LIST_DIR}/tool-targets.cmake)\n")
+	endif()
+	file(WRITE ${configPath} ${configLines})
+
+	install(FILES ${configPath} ${versionPath} DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/VFC
+		COMPONENT dev)
 endif()
-file(WRITE ${configPath} ${configLines})
-
-install(FILES ${configPath} ${versionPath} DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/VFC
-	COMPONENT dev)
 
 # Documentation. (populated by built libraries)
 add_subdirectory(doc)
