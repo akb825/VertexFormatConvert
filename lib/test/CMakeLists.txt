@@ -5,9 +5,9 @@ endif()
 find_package(Threads)
 
 file(GLOB_RECURSE sources *.cpp *.h)
-add_executable(vfc_test ${sources})
+add_executable(vfc_lib_test ${sources})
 
-target_include_directories(vfc_test PRIVATE ${GTEST_INCLUDE_DIRS} ../glm)
-target_link_libraries(vfc_test PRIVATE VFC::lib ${GTEST_BOTH_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_include_directories(vfc_lib_test PRIVATE ${GTEST_INCLUDE_DIRS} ../glm)
+target_link_libraries(vfc_lib_test PRIVATE VFC::lib ${GTEST_BOTH_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
-add_test(NAME VFCLibTest COMMAND vfc_test)
+add_test(NAME VFCLibTest COMMAND vfc_lib_test)
