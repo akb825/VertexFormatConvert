@@ -24,6 +24,8 @@ add_custom_command(OUTPUT ${outputFile}
 	COMMENT "Generating API documentation with Doxygen" VERBATIM)
 add_custom_target(vfc_doc ALL DEPENDS ${outputFile})
 
+vfc_set_folder(vfc_doc)
+
 if (VFC_INSTALL)
 	install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/ DESTINATION ${CMAKE_INSTALL_DOCDIR})
 endif()

@@ -44,6 +44,10 @@ if (VFC_INSTALL AND VFC_INSTALL_SET_RPATH)
 	endif()
 endif()
 
+function(vfc_set_folder target)
+	set_property(TARGET ${target} PROPERTY FOLDER ${VFC_ROOT_FOLDER})
+endfunction()
+
 function(vfc_setup_filters)
 	set(options)
 	set(oneValueArgs SRC_DIR INCLUDE_DIR)
