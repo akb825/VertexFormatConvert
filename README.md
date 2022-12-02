@@ -1,5 +1,7 @@
 # Introduction
 
+[![VertexFormatConvert](https://github.com/akb825/VertexFormatConvert/actions/workflows/main.yml/badge.svg)](https://github.com/akb825/VertexFormatConvert/actions/workflows/main.yml)
+
 Vertex Format Convert (VFC) is a simple library and utility for converting vertex formats. This is intended to aid in converting from raw model formats, such as from interchange formats (e.g. OBJ, COLLADA), into formats that are suitable for usage at runtime. This may include interleaving vertex data, re-mapping indices (e.g. from separate indices to a single combined index), and converting to packed formats.
 
 Example uses include:
@@ -7,8 +9,6 @@ Example uses include:
 * Library integrated into C++ tools for model conversion to efficient runtime formats.
 * Library integrated into C++ applications for on the fly conversion to runtime formats.
 * Tool integrated into scripts performing model conversion. Most of the implementation can be in a higher-level language, while the tool performs the processor-intensive work.
-
-[![Build Status](https://dev.azure.com/akb825/DeepSea/_apis/build/status/akb825.VertexFormatConvert?branchName=master)](https://dev.azure.com/akb825/DeepSea/_build/latest?definitionId=6&branchName=master)
 
 # Dependencies
 
