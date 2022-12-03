@@ -8,7 +8,7 @@ on:
     - master
 env:
   CTEST_OUTPUT_ON_FAILURE: '1'
-  GTEST_OUTPUT: "xml:${{ github.workspace }}/test-results/"
+  GTEST_OUTPUT: xml:${{ github.workspace }}/test-results/
   cmake_common_args: "-DCMAKE_FIND_ROOT_PATH=${{ github.workspace }}/dependencies -DCMAKE_PREFIX_PATH=${{ github.workspace }}/dependencies"
   cores_count: '2'
   cores_mac_count: '3'
@@ -52,7 +52,7 @@ jobs:
     - name: Run tests debug
       continue-on-error: true
       timeout-minutes: 5
-      run: ctest || true
+      run: ctest
       working-directory: "${{ github.workspace }}/Debug"
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action@v2
@@ -71,7 +71,7 @@ jobs:
     - name: Run tests release
       continue-on-error: true
       timeout-minutes: 5
-      run: ctest || true
+      run: ctest
       working-directory: "${{ github.workspace }}/Release"
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action@v2
@@ -114,7 +114,7 @@ jobs:
     - name: Run tests debug
       continue-on-error: true
       timeout-minutes: 5
-      run: ctest || true
+      run: ctest
       working-directory: "${{ github.workspace }}/Debug"
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action/composite@v2
@@ -133,7 +133,7 @@ jobs:
     - name: Run tests release
       continue-on-error: true
       timeout-minutes: 5
-      run: ctest || true
+      run: ctest
       working-directory: "${{ github.workspace }}/Release"
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action/composite@v2
@@ -191,7 +191,7 @@ jobs:
     - name: Run tests debug
       continue-on-error: true
       timeout-minutes: 5
-      run: ctest -C Debug || true
+      run: ctest -C Debug
       shell: bash
       working-directory: "${{ github.workspace }}"
     - name: Publish test results
@@ -209,7 +209,7 @@ jobs:
     - name: Run tests release
       continue-on-error: true
       timeout-minutes: 5
-      run: ctest -C Release || true
+      run: ctest -C Release
       shell: bash
       working-directory: "${{ github.workspace }}"
     - name: Publish test results
