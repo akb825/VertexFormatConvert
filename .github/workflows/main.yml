@@ -46,8 +46,8 @@ jobs:
       working-directory: "${{ github.workspace }}"
     - name: Build debug
       run: |-
-        mkdir Debug
-        cd Debug
+        mkdir -p build/Debug
+        cd build/Debug
         cmake -DCMAKE_BUILD_TYPE=Debug ${{ env.cmake_common_args }} ${{ matrix.cmake_args }} \
           ${{ github.workspace }}
         cmake --build . -j ${{ env.cores_count }}
@@ -56,7 +56,7 @@ jobs:
       continue-on-error: true
       timeout-minutes: 5
       run: ctest
-      working-directory: "${{ github.workspace }}/Debug"
+      working-directory: "${{ github.workspace }}/build/Debug"
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action@v2
       with:
@@ -67,8 +67,8 @@ jobs:
       working-directory: "${{ env.test_results_location }}"
     - name: Build release
       run: |-
-        mkdir Release
-        cd Release
+        mkdir -p build/Release
+        cd build/Release
         cmake -DCMAKE_BUILD_TYPE=Release ${{ env.cmake_common_args }} ${{ matrix.cmake_args }} \
           ${{ github.workspace }}
         cmake --build . -j ${{ env.cores_count }}
@@ -77,7 +77,7 @@ jobs:
       continue-on-error: true
       timeout-minutes: 5
       run: ctest
-      working-directory: "${{ github.workspace }}/Release"
+      working-directory: "${{ github.workspace }}/build/Release"
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action@v2
       with:
@@ -111,8 +111,8 @@ jobs:
       working-directory: "${{ github.workspace }}"
     - name: Build debug
       run: |-
-        mkdir Debug
-        cd Debug
+        mkdir -p build/Debug
+        cd build/Debug
         cmake -DCMAKE_BUILD_TYPE=Debug ${{ env.cmake_common_args }} ${{ matrix.cmake_args }} \
           ${{ github.workspace }}
         cmake --build . -j ${{ env.cores_mac_count }}
@@ -121,7 +121,7 @@ jobs:
       continue-on-error: true
       timeout-minutes: 5
       run: ctest
-      working-directory: "${{ github.workspace }}/Debug"
+      working-directory: "${{ github.workspace }}/build/Debug"
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action/composite@v2
       with:
@@ -132,8 +132,8 @@ jobs:
       working-directory: "${{ env.test_results_location }}"
     - name: Build release
       run: |-
-        mkdir Release
-        cd Release
+        mkdir -p build/Release
+        cd build/Release
         cmake -DCMAKE_BUILD_TYPE=Release ${{ env.cmake_common_args }} ${{ matrix.cmake_args }} \
           ${{ github.workspace }}
         cmake --build . -j ${{ env.cores_mac_count }}
@@ -142,7 +142,7 @@ jobs:
       continue-on-error: true
       timeout-minutes: 5
       run: ctest
-      working-directory: "${{ github.workspace }}/Release"
+      working-directory: "${{ github.workspace }}/build/Release"
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action/composite@v2
       with:
@@ -192,18 +192,20 @@ jobs:
       working-directory: "${{ github.workspace }}/googletest-code/build"
     - name: Run CMake
       run: |-
+        mkdir build
+        cd build
         cmake ${{ env.cmake_common_args }} ${{ matrix.cmake_args }} -A ${{ matrix.arch }} -T v141 `
           ${{ github.workspace }}
       working-directory: "${{ github.workspace }}"
     - name: Build Debug
       run: cmake --build . --config Debug
-      working-directory: "${{ github.workspace }}"
+      working-directory: "${{ github.workspace }}/build"
     - name: Run tests debug
       continue-on-error: true
       timeout-minutes: 5
       run: ctest -C Debug
       shell: bash
-      working-directory: "${{ github.workspace }}"
+      working-directory: "${{ github.workspace }}/build"
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action/composite@v2
       with:
@@ -215,13 +217,13 @@ jobs:
       working-directory: "${{ env.test_results_location }}"
     - name: Build release
       run: cmake --build . --config Release
-      working-directory: "${{ github.workspace }}"
+      working-directory: "${{ github.workspace }}/build"
     - name: Run tests release
       continue-on-error: true
       timeout-minutes: 5
       run: ctest -C Release
       shell: bash
-      working-directory: "${{ github.workspace }}"
+      working-directory: "${{ github.workspace }}/build"
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action/composite@v2
       with:
