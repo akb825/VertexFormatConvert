@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Aaron Barany
+ * Copyright 2020-2023 Aaron Barany
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 #include <VFC/VertexValue.h>
 
+#include "HalfFloat.h"
 #include <VFC/VertexFormat.h>
 #include <cassert>
 #include <cmath>
@@ -134,14 +135,26 @@ inline void unpackDirect(double* values, const T* data, unsigned int count)
 		values[i] = static_cast<double>(alignedData[i]);
 }
 
+VFC_START_HALF_FLOAT()
 inline void unpackHalfFloatValues(double* values, const std::uint16_t* data, unsigned int count)
 {
 	assert(count <= 4);
 	std::uint16_t alignedData[4];
 	std::memcpy(alignedData, data, sizeof(std::uint16_t)*count);
-	for (unsigned int i = 0; i < count; ++i)
-		values[i] = glm::unpackHalf(glm::u16vec1(alignedData[i])).x;
+	if (VFC_ALWAYS_HARDWARE_HALF_FLOAT || hasHardwareHalfFloat)
+	{
+		VFC_ALIGN(16) float floatValues[4];
+		unpackHardwareHalfFloat4(floatValues, alignedData);
+		for (unsigned int i = 0; i < count; ++i)
+			values[i] = floatValues[i];
+	}
+	else
+	{
+		for (unsigned int i = 0; i < count; ++i)
+			values[i] = glm::unpackHalf(glm::u16vec1(alignedData[i])).x;
+	}
 }
+VFC_END_HALF_FLOAT()
 
 template <typename T>
 inline typename std::make_signed<T>::type makeSigned(T value, T signBit)
@@ -258,8 +271,18 @@ inline void packHalfFloatValues(std::uint16_t* data, const double* values, unsig
 {
 	assert(count <= 4);
 	std::uint16_t alignedData[4];
-	for (unsigned int i = 0; i < count; ++i)
-		alignedData[i] = glm::packHalf(glm::vec1(static_cast<float>(values[i]))).x;
+	if (VFC_ALWAYS_HARDWARE_HALF_FLOAT || hasHardwareHalfFloat)
+	{
+		VFC_ALIGN(16) float floatValues[4];
+		for (unsigned int i = 0; i < count; ++i)
+			floatValues[i] = static_cast<float>(values[i]);
+		packHardwareHalfFloat4(alignedData, floatValues);
+	}
+	else
+	{
+		for (unsigned int i = 0; i < count; ++i)
+			alignedData[i] = glm::packHalf(glm::vec1(static_cast<float>(values[i]))).x;
+	}
 	std::memcpy(data, alignedData, sizeof(std::uint16_t)*count);
 }
 
