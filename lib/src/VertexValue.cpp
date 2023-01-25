@@ -135,7 +135,6 @@ inline void unpackDirect(double* values, const T* data, unsigned int count)
 		values[i] = static_cast<double>(alignedData[i]);
 }
 
-VFC_START_HALF_FLOAT()
 inline void unpackHalfFloatValues(double* values, const std::uint16_t* data, unsigned int count)
 {
 	assert(count <= 4);
@@ -154,7 +153,6 @@ inline void unpackHalfFloatValues(double* values, const std::uint16_t* data, uns
 			values[i] = glm::unpackHalf(glm::u16vec1(alignedData[i])).x;
 	}
 }
-VFC_END_HALF_FLOAT()
 
 template <typename T>
 inline typename std::make_signed<T>::type makeSigned(T value, T signBit)
