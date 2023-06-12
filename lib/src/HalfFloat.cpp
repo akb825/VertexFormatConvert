@@ -18,18 +18,23 @@
 
 #if VFC_WINDOWS
 #include <intrin.h>
+#elif VFC_SSE
+#include <cpuid.h>
 #endif
 
 namespace vfc
 {
 
-#if VFC_SSE && !VFC_WINDOWS
-static void __cpuid(int cpuInfo[4], int function)
+#if VFC_WINDOWS
+static void __get_cpuid(unsigned int level, unsigned int* eax, unsigned int* ebx, unsigned int* ecx,
+    unsigned int* edx)
 {
-	cpuInfo[0] = function;
-	cpuInfo[2] = 0;
-	asm volatile("cpuid\n\t" : "+a"(cpuInfo[0]), "=b"(cpuInfo[1]), "+c"(cpuInfo[2]),
-		"=d"(cpuInfo[3]));
+	int cpuInfo[4];
+	__cpuid(cpuInfo, level);
+	*eax = cpuInfo[0];
+	*ebx = cpuInfo[1];
+	*ecx = cpuInfo[2];
+	*edx = cpuInfo[3];
 }
 #endif
 
@@ -38,9 +43,8 @@ bool checkHasHardwareHalfFloat()
 #if VFC_SSE
 	const int f16cBit = 1 << 29;
 
-	int cpuInfo[4];
-	__cpuid(cpuInfo, 1);
-	int ecx = cpuInfo[2];
+	unsigned int eax = 0, ebx = 0, ecx = 0, edx = 0;
+	__get_cpuid(1, &eax, &ebx, &ecx, &edx);
 	return (ecx & f16cBit) != 0;
 #elif VFC_NEON
 	return true;
