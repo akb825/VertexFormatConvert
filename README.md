@@ -14,7 +14,7 @@ Example uses include:
 
 The following software is required to build VFC:
 
-* [CMake](https://cmake.org/) 3.1 or later
+* [CMake](https://cmake.org/) 3.10 or later
 * [GLM](https://glm.g-truc.net/) (required, included as a submodule)
 * [RapidJSON](https://rapidjson.org/) (required for tool, included as a submodule)
 * [doxygen](https://doxygen.nl/) (optional)
@@ -75,6 +75,7 @@ The following options may be used when running cmake:
 * `-DCMAKE_BUILD_TYPE=Debug|Release`: Building in `Debug` or `Release`. This should always be specified.
 * `-DCMAKE_INSTALL_PREFIX=path`: Sets the path to install to when running `make install`.
 * `-DVFC_SHARED=ON|OFF`: Set to `ON` to build with shared libraries, `OFF` to build with static libraries. Default is `OFF`.
+* `-DVFC_STATIC_RUNTIME=ON|OFF`: Set to `ON` to use the static runtime library on Windows. When `OFF`, it will respect the existing value of `CMAKE_MSVC_RUNTIME_LIBRARY`, or use dynamic runtime if otherwise unset. It is not recommended to set this to `ON` when `VFC_SHARED` is also `ON`. Default is `OFF`.
 
 ### Enabled Builds
 

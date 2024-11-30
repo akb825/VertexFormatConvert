@@ -1,4 +1,12 @@
-cmake_minimum_required(VERSION 3.5)
+if (WIN32)
+	# Needs 3.15 for CMAKE_MSVC_RUNTIME_LIBRARY.
+	cmake_minimum_required(VERSION 3.15)
+else()
+	cmake_minimum_required(VERSION 3.10)
+endif()
+if (POLICY CMP0144)
+	cmake_policy(SET CMP0144 NEW)
+endif()
 project(VFC)
 
 # Build options
@@ -9,6 +17,7 @@ else()
 	set(VFC_SHARED_DEFAULT OFF)
 endif()
 set(VFC_SHARED ${VFC_SHARED_DEFAULT} CACHE BOOL "Build VFC using shared libraries.")
+set(VFC_STATIC_RUNTIME OFF CACHE BOOL "Use static runtime library on Windows.")
 
 # Options for disabling portions of the build.
 set(VFC_BUILD_TESTS ON CACHE BOOL "Build unit tests.")
