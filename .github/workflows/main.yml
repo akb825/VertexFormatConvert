@@ -149,7 +149,7 @@ jobs:
         check_name: Tests (Mac ${{ matrix.lib_type }} Release)
         junit_files: "${{ env.test_results_location }}/*.xml"
   Windows:
-    runs-on: windows-2019
+    runs-on: windows-2025
     strategy:
       matrix:
         include:
@@ -183,7 +183,7 @@ jobs:
     - name: Build gtest
       run: |-
         cmake .. -DCMAKE_INSTALL_PREFIX=${{ env.dependency_location }} -Dgtest_force_shared_crt=ON `
-          -A ${{ matrix.arch }} -T v141 -DCMAKE_DEBUG_POSTFIX=d
+          -A ${{ matrix.arch }} -T v142 -DCMAKE_DEBUG_POSTFIX=d
         cmake --build . --config Debug
         cmake --build . --config Debug --target install
         # Need to also install release build to see the debug version.
@@ -194,7 +194,7 @@ jobs:
       run: |-
         mkdir build
         cd build
-        cmake ${{ env.cmake_common_args }} ${{ matrix.cmake_args }} -A ${{ matrix.arch }} -T v141 `
+        cmake ${{ env.cmake_common_args }} ${{ matrix.cmake_args }} -A ${{ matrix.arch }} -T v142 `
           ${{ github.workspace }}
       working-directory: "${{ github.workspace }}"
     - name: Build Debug
