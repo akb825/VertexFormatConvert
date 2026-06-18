@@ -1,6 +1,7 @@
 /build
 .cmake
 .idea
+.qtcreator
 .vscode
 .DS_Store
 *.swp
